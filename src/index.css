@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #7652FF;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Slick Carousel Full Height Fixes */
+.slick-slider, .slick-list, .slick-track, .slick-slide {
+  height: 100%;
+}
+
+.slick-slide > div {
+  height: 100%;
+}
