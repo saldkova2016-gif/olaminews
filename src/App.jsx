@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from './hooks/useStore';
 import {
   Clock,
@@ -130,37 +130,53 @@ const Header = ({ toggleAdmin }) => {
   );
 };
 
-const MainStage = ({ events }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+export const ProgressBar = ({ duration, color = BRAND_COLOR }) => {
   const [progress, setProgress] = useState(0);
 
-  const INTERVAL_MS = 60000;
-
   useEffect(() => {
-    if (events.length <= 1) return;
+    const step = 100 / (duration / 100);
 
-    setProgress(0);
-    const step = 100 / (INTERVAL_MS / 100);
-
-    const progressTimer = setInterval(() => {
+    const timer = setInterval(() => {
         setProgress(prev => {
             if (prev >= 100) return 100;
             return prev + step;
         });
     }, 100);
 
+    return () => clearInterval(timer);
+  }, [duration]);
+
+  return (
+    <div className="absolute bottom-0 left-0 h-3 bg-gray-800 w-full z-50">
+        <div
+          className="h-full transition-all duration-100 ease-linear"
+          style={{
+              width: `${progress}%`,
+              backgroundColor: color
+          }}
+        ></div>
+    </div>
+  );
+};
+
+export const MainStage = ({ events }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const INTERVAL_MS = 60000;
+
+  useEffect(() => {
+    if (events.length <= 1) return;
+
     const slideTimer = setInterval(() => {
       setIsLoading(true);
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % events.length);
         setIsLoading(false);
-        setProgress(0);
       }, 500);
     }, INTERVAL_MS);
 
     return () => {
-        clearInterval(progressTimer);
         clearInterval(slideTimer);
     };
   }, [events, currentIndex]);
@@ -260,15 +276,9 @@ const MainStage = ({ events }) => {
          </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 h-3 bg-gray-800 w-full z-50">
-          <div
-            className="h-full transition-all duration-100 ease-linear"
-            style={{
-                width: `${progress}%`,
-                backgroundColor: BRAND_COLOR
-            }}
-          ></div>
-      </div>
+      {events.length > 1 && (
+        <ProgressBar duration={INTERVAL_MS} key={currentIndex} />
+      )}
     </div>
   );
 };
