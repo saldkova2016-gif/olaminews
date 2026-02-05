@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useStore } from './hooks/useStore';
 import {
   Clock,
   CloudSun,
@@ -18,41 +19,12 @@ import {
   Loader2,
   Edit2,
   FileText,
-  Type
+  Type,
+  Cloud,
+  CloudOff
 } from 'lucide-react';
 
-// --- MOCK DATA & CONSTANTS ---
-
 const BRAND_COLOR = '#7652FF'; // Olami Purple
-
-const INITIAL_EVENTS = [
-  {
-    id: 1,
-    title: "Ханукальная Вечеринка",
-    description: "Зажигание свечей, пончики и музыкальный вечер для всех желающих.",
-    image: "https://images.unsplash.com/photo-1543092587-d8b8fe8327c9?auto=format&fit=crop&q=80&w=1000&h=1000",
-    link: "https://olami.moscow/hanukkah",
-    date: new Date(new Date().getTime() + 86400000).toISOString(), // Tomorrow
-    duration: 120,
-  },
-  {
-    id: 2,
-    title: "Лекция: Бизнес и Тора",
-    description: "Специальный гость: Раввин Алекс Артовский. Обсудим этику бизнеса.",
-    image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=1920",
-    link: "https://olami.moscow/lecture",
-    date: new Date(new Date().getTime() + 1000 * 60 * 30).toISOString(), // Starts in 30 mins
-    duration: 60,
-  }
-];
-
-const INITIAL_NEWS = [
-  { id: 1, text: "Поздравляем Давида с помолвкой! Мазл Тов!", type: "normal" },
-  { id: 2, text: "Внимание! Изменилось время начала Шаббата.", type: "urgent" },
-  { id: 3, text: "Сегодня день рождения у Сары! Поздравляем!", type: "birthday" },
-  { id: 4, text: "Ханука Самеах! Зажигаем свечи в 18:00.", type: "holiday" },
-  { id: 5, text: "Забыт iPhone на ресепшн, просьба забрать.", type: "normal" }
-];
 
 const PRESET_TITLES = [
   "Урок для юношей",
@@ -77,13 +49,13 @@ const generateQRCodeUrl = (link) => {
 };
 
 const formatDate = (isoString) => {
+  if (!isoString) return '';
   const date = new Date(isoString);
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 };
 
 // --- COMPONENTS ---
 
-// 1. HEADER ZONE (Zone V)
 const Header = ({ toggleAdmin }) => {
   const [time, setTime] = useState(new Date());
   const [weather, setWeather] = useState(null);
@@ -158,7 +130,6 @@ const Header = ({ toggleAdmin }) => {
   );
 };
 
-// 2. MAIN STAGE (Zone A)
 const MainStage = ({ events }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -238,15 +209,12 @@ const MainStage = ({ events }) => {
         </div>
       )}
 
-      {/* Background Blur */}
       <div
         className="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-110"
         style={{ backgroundImage: `url(${event.image})` }}
       ></div>
 
-      {/* Layout: Image Left (Maximized), Content Right */}
       <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start">
-         {/* Left: Image (Original Aspect Ratio, Bigger) */}
          <div className="h-full w-2/3 flex-shrink-0 relative">
              <div className="relative w-full h-full">
                 <img
@@ -258,13 +226,11 @@ const MainStage = ({ events }) => {
              </div>
          </div>
 
-         {/* Right: Content */}
          <div className="flex-1 flex flex-col items-start pt-4">
              <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-4">
                 {event.title}
              </h2>
 
-             {/* Description */}
              {event.description && (
                <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4" style={{ borderColor: BRAND_COLOR }}>
                  {event.description}
@@ -276,7 +242,6 @@ const MainStage = ({ events }) => {
                  <span>{formatDate(event.date)}</span>
              </div>
 
-             {/* QR Code Block */}
              <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
                 <div className="relative w-[250px] h-[250px]">
                     <img
@@ -295,7 +260,6 @@ const MainStage = ({ events }) => {
          </div>
       </div>
 
-      {/* Progress Bar Loader */}
       <div className="absolute bottom-0 left-0 h-3 bg-gray-800 w-full z-50">
           <div
             className="h-full transition-all duration-100 ease-linear"
@@ -309,7 +273,6 @@ const MainStage = ({ events }) => {
   );
 };
 
-// 3. NEWS FEED (Zone B)
 const NewsFeed = ({ news }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const ITEMS_PER_PAGE = 3;
@@ -351,7 +314,7 @@ const NewsFeed = ({ news }) => {
     return {
         background: 'bg-white',
         border: '',
-        borderColor: color, // Handled via inline style for dynamic color
+        borderColor: color,
         shadow: 'shadow-sm'
     };
   };
@@ -400,8 +363,8 @@ const NewsFeed = ({ news }) => {
   );
 };
 
-// 4. ADMIN PANEL (CMS)
-const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
+const AdminPanel = ({ store, onClose }) => {
+  const { events, news, addEvent, updateEvent, deleteEvent, addNews, updateNews, deleteNews, isCloudEnabled } = store;
   const [activeTab, setActiveTab] = useState('events');
   const [editingId, setEditingId] = useState(null);
 
@@ -416,15 +379,13 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const handleSaveEvent = (e) => {
     e.preventDefault();
     if (editingId) {
-      setEvents(events.map(ev => ev.id === editingId ? { ...ev, ...eventForm } : ev));
+      updateEvent(editingId, eventForm);
       setEditingId(null);
     } else {
-      const event = {
-        id: Date.now(),
+      addEvent({
         ...eventForm,
         date: eventForm.date || new Date().toISOString()
-      };
-      setEvents([...events, event]);
+      });
     }
     setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
   };
@@ -445,10 +406,10 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const handleSaveNews = (e) => {
     e.preventDefault();
     if (editingId) {
-        setNews(news.map(n => n.id === editingId ? { ...n, ...newsForm } : n));
+        updateNews(editingId, newsForm);
         setEditingId(null);
     } else {
-        setNews([{ id: Date.now(), ...newsForm }, ...news]);
+        addNews(newsForm);
     }
     setNewsForm({ text: '', type: 'normal' });
   };
@@ -458,16 +419,16 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
     setNewsForm({ text: item.text, type: item.type });
   };
 
-  const deleteEvent = (id) => {
-    setEvents(events.filter(e => e.id !== id));
+  const handleDeleteEvent = (id) => {
+    deleteEvent(id);
     if (editingId === id) {
         setEditingId(null);
         setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
     }
   };
 
-  const deleteNews = (id) => {
-    setNews(news.filter(n => n.id !== id));
+  const handleDeleteNews = (id) => {
+    deleteNews(id);
     if (editingId === id) {
         setEditingId(null);
         setNewsForm({ text: '', type: 'normal' });
@@ -498,7 +459,18 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">CMS Olami Dashboard</h1>
-            <p className="text-gray-500">Управление контентом экрана</p>
+            <div className="flex items-center gap-2 mt-1">
+                <p className="text-gray-500">Управление контентом экрана</p>
+                {isCloudEnabled ? (
+                    <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">
+                        <Cloud className="w-3 h-3" /> Облако
+                    </span>
+                ) : (
+                    <span className="flex items-center gap-1 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full border border-gray-300">
+                        <CloudOff className="w-3 h-3" /> Локально
+                    </span>
+                )}
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -662,7 +634,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                         <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition z-10">
+                         <button onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition z-10">
                            <Trash2 className="w-5 h-5" />
                          </button>
                       </div>
@@ -746,7 +718,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                          </div>
                          <p className="text-gray-800">{item.text}</p>
                       </div>
-                      <button onClick={(e) => { e.stopPropagation(); deleteNews(item.id); }} className="text-gray-400 hover:text-red-500 p-2 z-10">
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteNews(item.id); }} className="text-gray-400 hover:text-red-500 p-2 z-10">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
@@ -761,66 +733,32 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   );
 };
 
-// 5. MAIN APP CONTAINER
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Storage logic
-  const [events, setEvents] = useState(() => {
-    const saved = localStorage.getItem('olami_events');
-    return saved ? JSON.parse(saved) : INITIAL_EVENTS;
-  });
-
-  const [news, setNews] = useState(() => {
-    const saved = localStorage.getItem('olami_news');
-    return saved ? JSON.parse(saved) : INITIAL_NEWS;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('olami_events', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem('olami_news', JSON.stringify(news));
-  }, [news]);
+  const store = useStore();
 
   return (
     <div className="h-screen w-screen bg-white font-sans overflow-hidden flex flex-col text-gray-900">
-
-      {/* View Switcher */}
       {isAdmin ? (
-        <AdminPanel
-          events={events}
-          setEvents={setEvents}
-          news={news}
-          setNews={setNews}
-          onClose={() => setIsAdmin(false)}
-        />
+        <AdminPanel store={store} onClose={() => setIsAdmin(false)} />
       ) : (
         <>
-          {/* Dashboard Grid Layout */}
           <div className="h-full w-full grid grid-rows-[96px_1fr] grid-cols-[3fr_1fr]">
-
-            {/* Zone C: Header */}
             <div className="col-span-2">
               <Header toggleAdmin={() => setIsAdmin(true)} />
             </div>
 
-            {/* Zone A: Main Stage */}
             <div className="bg-black relative">
-              <MainStage events={events} />
+              <MainStage events={store.events} />
             </div>
 
-            {/* Zone B: News Feed */}
             <div className="bg-gray-50 h-full overflow-hidden">
-              <NewsFeed news={news} />
+              <NewsFeed news={store.news} />
             </div>
-
           </div>
         </>
       )}
 
-      {/* Styles for Hide Scrollbar utility */}
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
             display: none;
