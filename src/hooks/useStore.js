@@ -60,6 +60,7 @@ export const useStore = () => {
             console.log("Signed in anonymously");
           } catch (error) {
             console.warn("Auth failed (likely not enabled in console), attempting Firestore anyway...", error);
+            console.error("If you expected Auth to work, check if 'Anonymous' provider is enabled in Firebase Console.");
           }
         }
 
@@ -75,6 +76,9 @@ export const useStore = () => {
             if (cloudEvents.length === 0) setLoading(false);
           }, (error) => {
               console.error("Cloud Events Error:", error);
+              if (error.code === 'permission-denied') {
+                  console.error("Permission Denied: Check your Firestore Security Rules in Firebase Console. Ensure read/write is allowed.");
+              }
               handleCloudError();
           });
 
@@ -85,6 +89,9 @@ export const useStore = () => {
             setLoading(false);
           }, (error) => {
               console.error("Cloud News Error:", error);
+              if (error.code === 'permission-denied') {
+                  console.error("Permission Denied: Check your Firestore Security Rules in Firebase Console. Ensure read/write is allowed.");
+              }
               handleCloudError();
           });
 
