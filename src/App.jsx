@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from './hooks/useStore';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Clock,
   CloudSun,
@@ -37,14 +38,13 @@ const OLAMI_LOGO = "https://static.tildacdn.com/tild3664-6533-4037-b864-37643230
 
 // --- UTILS ---
 
-const generateQRCodeUrl = (link) => {
+const getQRCodeValue = (link) => {
   try {
     const url = new URL(link.startsWith('http') ? link : `https://${link}`);
     url.searchParams.set('utm_source', 'dashboard');
-    const finalLink = url.toString();
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalLink)}&bgcolor=ffffff&color=000000&margin=10`;
+    return url.toString();
   } catch (e) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link)}&bgcolor=ffffff&color=000000&margin=10`;
+    return link;
   }
 };
 
@@ -267,10 +267,11 @@ export const MainStage = ({ events }) => {
 
              <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
                 <div className="relative w-[250px] h-[250px]">
-                    <img
-                    src={generateQRCodeUrl(event.link)}
-                    alt="QR Registration"
-                    className="w-full h-full object-contain"
+                    <QRCodeSVG
+                        value={getQRCodeValue(event.link)}
+                        size={250}
+                        level="M"
+                        includeMargin={true}
                     />
                 </div>
                 <p
