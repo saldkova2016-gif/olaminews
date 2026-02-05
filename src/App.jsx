@@ -56,14 +56,26 @@ const formatDate = (isoString) => {
 
 // --- COMPONENTS ---
 
-const Header = ({ toggleAdmin }) => {
+const ClockWidget = () => {
   const [time, setTime] = useState(new Date());
-  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  return (
+    <div className="flex items-center gap-3 bg-gray-100 px-6 py-2 rounded-full">
+      <Clock className="w-6 h-6 text-gray-500" />
+      <span className="text-3xl font-bold font-mono text-gray-800" data-testid="clock-time">
+        {time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+      </span>
+    </div>
+  );
+};
+
+const Header = ({ toggleAdmin }) => {
+  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -110,12 +122,7 @@ const Header = ({ toggleAdmin }) => {
           </span>
         </div>
 
-        <div className="flex items-center gap-3 bg-gray-100 px-6 py-2 rounded-full">
-          <Clock className="w-6 h-6 text-gray-500" />
-          <span className="text-3xl font-bold font-mono text-gray-800">
-            {time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
+        <ClockWidget />
 
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: BRAND_COLOR }}></div>
