@@ -247,12 +247,12 @@ const MainStage = ({ events }) => {
       {/* Layout: Image Left (Maximized), Content Right */}
       <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start">
          {/* Left: Image (Original Aspect Ratio, Bigger) */}
-         <div className="h-full w-2/3 flex-shrink-0 relative flex justify-center items-start">
-             <div className="relative max-h-full max-w-full">
+         <div className="h-full w-2/3 flex-shrink-0 relative">
+             <div className="relative w-full h-full">
                 <img
                 src={event.image}
                 alt={event.title}
-                className="max-h-[90vh] w-auto h-auto object-contain shadow-2xl rounded-2xl"
+                className="w-full h-full object-contain object-left-top shadow-2xl rounded-2xl"
                 />
                 {statusBadge}
              </div>
