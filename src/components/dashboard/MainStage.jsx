@@ -13,7 +13,20 @@ const MainStage = () => {
 
   // Filter events that are valid (e.g., not in the past, or handled by "show dates")
   // For now, show all events sorted by date
-  const sortedEvents = [...events].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  const sortedEvents = [...events]
+    .filter(event => {
+      if (!event.datetime) return false;
+      const d = new Date(event.datetime);
+      if (isNaN(d.getTime())) return false;
+
+      // Filter out past events (keep events that have not ended)
+      const durationMinutes = typeof event.duration === 'number' ? event.duration : 120;
+      const now = new Date();
+      const endTime = new Date(d.getTime() + durationMinutes * 60 * 1000);
+
+      return endTime > now;
+    })
+    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
 
   useEffect(() => {
     const checkUrgentEvent = () => {
