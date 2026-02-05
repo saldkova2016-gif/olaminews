@@ -16,7 +16,9 @@ import {
   PartyPopper,
   Info,
   Loader2,
-  Edit2
+  Edit2,
+  FileText,
+  Type
 } from 'lucide-react';
 
 // --- MOCK DATA & CONSTANTS ---
@@ -27,6 +29,7 @@ const INITIAL_EVENTS = [
   {
     id: 1,
     title: "Ханукальная Вечеринка",
+    description: "Зажигание свечей, пончики и музыкальный вечер для всех желающих.",
     image: "https://images.unsplash.com/photo-1543092587-d8b8fe8327c9?auto=format&fit=crop&q=80&w=1000&h=1000",
     link: "https://olami.moscow/hanukkah",
     date: new Date(new Date().getTime() + 86400000).toISOString(), // Tomorrow
@@ -35,6 +38,7 @@ const INITIAL_EVENTS = [
   {
     id: 2,
     title: "Лекция: Бизнес и Тора",
+    description: "Специальный гость: Раввин Алекс Артовский. Обсудим этику бизнеса.",
     image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=1920",
     link: "https://olami.moscow/lecture",
     date: new Date(new Date().getTime() + 1000 * 60 * 30).toISOString(), // Starts in 30 mins
@@ -48,6 +52,13 @@ const INITIAL_NEWS = [
   { id: 3, text: "Сегодня день рождения у Сары! Поздравляем!", type: "birthday" },
   { id: 4, text: "Ханука Самеах! Зажигаем свечи в 18:00.", type: "holiday" },
   { id: 5, text: "Забыт iPhone на ресепшн, просьба забрать.", type: "normal" }
+];
+
+const PRESET_TITLES = [
+  "Урок для юношей",
+  "Урок для девушек",
+  "Общее занятие",
+  "Шаббат"
 ];
 
 const OLAMI_LOGO = "https://static.tildacdn.com/tild3664-6533-4037-b864-376432303439/Vector.svg";
@@ -82,7 +93,6 @@ const Header = ({ toggleAdmin }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Weather for Moscow
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -95,12 +105,12 @@ const Header = ({ toggleAdmin }) => {
         }
       } catch (error) {
         console.error("Weather fetch failed", error);
-        setWeather(-5); // Fallback
+        setWeather(-5);
       }
     };
 
     fetchWeather();
-    const weatherInterval = setInterval(fetchWeather, 60000 * 30); // Every 30 mins
+    const weatherInterval = setInterval(fetchWeather, 60000 * 30);
     return () => clearInterval(weatherInterval);
   }, []);
 
@@ -118,7 +128,6 @@ const Header = ({ toggleAdmin }) => {
       <div className="flex items-center gap-6">
         <img src={OLAMI_LOGO} alt="Olami" className="h-16 w-auto object-contain" />
         <div className="h-10 w-px bg-gray-300 mx-2"></div>
-        {/* Removed "MOSCOW" and "SMART DASHBOARD" text entirely as requested */}
       </div>
 
       <div className="flex items-center gap-10 text-gray-700">
@@ -153,15 +162,15 @@ const Header = ({ toggleAdmin }) => {
 const MainStage = ({ events }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0); // For progress bar/loader animation
+  const [progress, setProgress] = useState(0);
 
-  const INTERVAL_MS = 60000; // 60 seconds per slide as requested ("minute")
+  const INTERVAL_MS = 60000;
 
   useEffect(() => {
     if (events.length <= 1) return;
 
     setProgress(0);
-    const step = 100 / (INTERVAL_MS / 100); // Update every 100ms
+    const step = 100 / (INTERVAL_MS / 100);
 
     const progressTimer = setInterval(() => {
         setProgress(prev => {
@@ -175,7 +184,7 @@ const MainStage = ({ events }) => {
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % events.length);
         setIsLoading(false);
-        setProgress(0); // Reset progress
+        setProgress(0);
       }, 500);
     }, INTERVAL_MS);
 
@@ -183,7 +192,7 @@ const MainStage = ({ events }) => {
         clearInterval(progressTimer);
         clearInterval(slideTimer);
     };
-  }, [events, currentIndex]); // Reset when index changes to restart progress
+  }, [events, currentIndex]);
 
   if (events.length === 0) {
     return (
@@ -223,7 +232,6 @@ const MainStage = ({ events }) => {
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden flex">
-      {/* Loader Overlay */}
       {isLoading && (
         <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
           <Loader2 className="w-16 h-16 text-white animate-spin" />
@@ -236,25 +244,34 @@ const MainStage = ({ events }) => {
         style={{ backgroundImage: `url(${event.image})` }}
       ></div>
 
-      {/* Layout: Image Left, Content Right */}
+      {/* Layout: Image Left (Square-ish), Content Right */}
       <div className="relative z-10 w-full h-full flex p-12 gap-12 items-start">
-         {/* Left: Image (Bigger) */}
-         <div className="h-full w-3/5 flex-shrink-0 relative">
-             <img
-               src={event.image}
-               alt={event.title}
-               className="h-full w-full object-contain object-left-top shadow-2xl rounded-2xl"
-             />
-             {statusBadge}
+         {/* Left: Image (Square Aspect Ratio enforced for containment) */}
+         <div className="h-full w-1/2 flex-shrink-0 relative flex items-center justify-center">
+             <div className="relative aspect-square max-h-full max-w-full">
+                <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover shadow-2xl rounded-2xl"
+                />
+                {statusBadge}
+             </div>
          </div>
 
-         {/* Right: Content (Title Top-Aligned with Image, QR Below) */}
+         {/* Right: Content */}
          <div className="flex-1 flex flex-col items-start pt-4">
-             <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-8">
+             <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-4">
                 {event.title}
              </h2>
 
-             <div className="flex items-center gap-4 text-2xl text-gray-300 mb-12 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit">
+             {/* Description */}
+             {event.description && (
+               <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4" style={{ borderColor: BRAND_COLOR }}>
+                 {event.description}
+               </p>
+             )}
+
+             <div className="flex items-center gap-4 text-2xl text-gray-300 mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit">
                  <Calendar className="w-8 h-8" />
                  <span>{formatDate(event.date)}</span>
              </div>
@@ -278,7 +295,7 @@ const MainStage = ({ events }) => {
          </div>
       </div>
 
-      {/* Progress Bar Loader (Bottom) */}
+      {/* Progress Bar Loader */}
       <div className="absolute bottom-0 left-0 h-3 bg-gray-800 w-full z-50">
           <div
             className="h-full transition-all duration-100 ease-linear"
@@ -315,20 +332,28 @@ const NewsFeed = ({ news }) => {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'birthday': return <Cake className="w-6 h-6 text-pink-500 flex-shrink-0" />;
-      case 'holiday': return <PartyPopper className="w-6 h-6 text-yellow-500 flex-shrink-0" />;
-      case 'urgent': return <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />;
-      default: return <Info className="w-6 h-6 text-blue-500 flex-shrink-0" />;
+      case 'birthday': return <Cake className="w-8 h-8 text-pink-500 flex-shrink-0" />;
+      case 'holiday': return <PartyPopper className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
+      case 'urgent': return <AlertCircle className="w-8 h-8 text-red-600 flex-shrink-0" />;
+      default: return <Info className="w-8 h-8 text-blue-500 flex-shrink-0" />;
     }
   };
 
-  const getBorderColor = (type) => {
-    switch (type) {
-      case 'birthday': return '#EC4899'; // Pink
-      case 'holiday': return '#EAB308'; // Yellow
-      case 'urgent': return '#EF4444'; // Red
-      default: return BRAND_COLOR;
+  const getContainerStyles = (type) => {
+    if (type === 'urgent') {
+        return {
+            background: 'bg-red-50',
+            border: 'border-l-8 border-red-600',
+            shadow: 'shadow-md shadow-red-100'
+        };
     }
+    const color = type === 'birthday' ? '#EC4899' : type === 'holiday' ? '#EAB308' : BRAND_COLOR;
+    return {
+        background: 'bg-white',
+        border: '',
+        borderColor: color, // Handled via inline style for dynamic color
+        shadow: 'shadow-sm'
+    };
   };
 
   return (
@@ -348,27 +373,27 @@ const NewsFeed = ({ news }) => {
 
       <div className="flex-1 overflow-hidden relative">
         <div className="absolute inset-0 p-8 space-y-6">
-          {visibleNews.map((item) => (
-            <div
-              key={item.id}
-              className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md bg-white animate-fade-in`}
-              style={{
-                borderLeftWidth: '6px',
-                borderLeftColor: getBorderColor(item.type)
-              }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                {getIcon(item.type)}
-                {item.type === 'urgent' && <span className="text-sm font-bold uppercase tracking-wide text-red-600">Важно</span>}
-                {item.type === 'birthday' && <span className="text-sm font-bold uppercase tracking-wide text-pink-600">День Рождения</span>}
-                {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
-              </div>
+          {visibleNews.map((item) => {
+             const styles = getContainerStyles(item.type);
+             return (
+                <div
+                key={item.id}
+                className={`p-6 rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow}`}
+                style={item.type !== 'urgent' ? { borderLeftWidth: '8px', borderLeftColor: styles.borderColor } : {}}
+                >
+                <div className="flex items-center gap-3 mb-3">
+                    {getIcon(item.type)}
+                    {item.type === 'urgent' && <span className="text-lg font-extrabold uppercase tracking-wide text-red-600">ВАЖНО</span>}
+                    {item.type === 'birthday' && <span className="text-sm font-bold uppercase tracking-wide text-pink-600">День Рождения</span>}
+                    {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
+                </div>
 
-              <p className={`text-2xl leading-normal ${item.type === 'urgent' ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
-                {item.text}
-              </p>
-            </div>
-          ))}
+                <p className={`text-2xl leading-normal ${item.type === 'urgent' ? 'font-bold text-gray-900' : 'text-gray-700'}`}>
+                    {item.text}
+                </p>
+                </div>
+             );
+          })}
         </div>
       </div>
     </div>
@@ -381,7 +406,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const [editingId, setEditingId] = useState(null);
 
   const [eventForm, setEventForm] = useState({
-    title: '', image: '', link: '', date: '', duration: 60
+    title: '', description: '', image: '', link: '', date: '', duration: 60
   });
 
   const [newsForm, setNewsForm] = useState({
@@ -401,7 +426,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
       };
       setEvents([...events, event]);
     }
-    setEventForm({ title: '', image: '', link: '', date: '', duration: 60 });
+    setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
   };
 
   const handleEditEvent = (event) => {
@@ -409,6 +434,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
     const formattedDate = event.date ? new Date(event.date).toISOString().substring(0, 16) : '';
     setEventForm({
         title: event.title,
+        description: event.description || '',
         image: event.image,
         link: event.link,
         date: formattedDate,
@@ -436,7 +462,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
     setEvents(events.filter(e => e.id !== id));
     if (editingId === id) {
         setEditingId(null);
-        setEventForm({ title: '', image: '', link: '', date: '', duration: 60 });
+        setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
     }
   };
 
@@ -451,7 +477,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const cancelEdit = () => {
     setEditingId(null);
     if (activeTab === 'events') {
-        setEventForm({ title: '', image: '', link: '', date: '', duration: 60 });
+        setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
     } else {
         setNewsForm({ text: '', type: 'normal' });
     }
@@ -530,9 +556,33 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         style={{ '--tw-ring-color': BRAND_COLOR }}
                         placeholder="Например: Шаббат"
                       />
+                      {/* Presets */}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {PRESET_TITLES.map(preset => (
+                            <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setEventForm({...eventForm, title: preset})}
+                                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-full transition"
+                            >
+                                {preset}
+                            </button>
+                        ))}
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка на картинку</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Описание (опционально)</label>
+                      <textarea
+                        rows={2}
+                        value={eventForm.description}
+                        onChange={e => setEventForm({...eventForm, description: e.target.value})}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none resize-none"
+                        style={{ '--tw-ring-color': BRAND_COLOR }}
+                        placeholder="Краткое описание события..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка на картинку (Квадрат)</label>
                       <div className="flex gap-2">
                         <ImageIcon className="w-5 h-5 text-gray-400 mt-2" />
                         <input
@@ -601,12 +651,13 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         onClick={() => handleEditEvent(event)}
                         className={`flex gap-4 p-4 border rounded-xl bg-white shadow-sm items-center cursor-pointer hover:border-purple-300 transition ${editingId === event.id ? 'ring-2 ring-purple-500 border-transparent' : 'border-gray-200'}`}
                     >
-                      <div className="w-24 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                        <img src={event.image} alt="" className="w-full h-full object-contain" />
+                      <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
+                        <img src={event.image} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-bold text-gray-900">{event.title}</h4>
-                        <div className="text-sm text-gray-500 flex items-center gap-4 mt-1">
+                        {event.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>}
+                        <div className="text-sm text-gray-500 flex items-center gap-4 mt-2">
                           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(event.date)}</span>
                         </div>
                       </div>
@@ -688,7 +739,6 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                     >
                       <div className="flex-1 pr-4">
                          <div className="flex items-center gap-2 mb-1">
-                            {/* News Icons visible in Admin List now */}
                             {getNewsIcon(item.type)}
                             {item.type === 'urgent' && <span className="text-xs font-bold text-red-600 uppercase">Срочно</span>}
                             {item.type === 'birthday' && <span className="text-xs font-bold text-pink-600 uppercase">День Рождения</span>}
