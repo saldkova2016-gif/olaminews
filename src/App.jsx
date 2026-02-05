@@ -247,7 +247,7 @@ const MainStage = ({ events }) => {
       {/* Layout: Image Left (Square-ish), Content Right */}
       <div className="relative z-10 w-full h-full flex p-12 gap-12 items-start">
          {/* Left: Image (Square Aspect Ratio enforced for containment) */}
-         <div className="h-full w-1/2 flex-shrink-0 relative flex items-center justify-center">
+         <div className="h-full w-1/2 flex-shrink-0 relative flex justify-center">
              <div className="relative aspect-square max-h-full max-w-full">
                 <img
                 src={event.image}
