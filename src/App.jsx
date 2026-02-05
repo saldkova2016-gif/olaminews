@@ -376,18 +376,22 @@ const AdminPanel = ({ store, onClose }) => {
     text: '', type: 'normal'
   });
 
-  const handleSaveEvent = (e) => {
+  const handleSaveEvent = async (e) => {
     e.preventDefault();
-    if (editingId) {
-      updateEvent(editingId, eventForm);
-      setEditingId(null);
-    } else {
-      addEvent({
-        ...eventForm,
-        date: eventForm.date || new Date().toISOString()
-      });
+    try {
+      if (editingId) {
+        await updateEvent(editingId, eventForm);
+        setEditingId(null);
+      } else {
+        await addEvent({
+          ...eventForm,
+          date: eventForm.date || new Date().toISOString()
+        });
+      }
+      setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
+    } catch (error) {
+      alert("Не удалось сохранить событие. Проверьте подключение или права доступа.");
     }
-    setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
   };
 
   const handleEditEvent = (event) => {
@@ -403,15 +407,19 @@ const AdminPanel = ({ store, onClose }) => {
     });
   };
 
-  const handleSaveNews = (e) => {
+  const handleSaveNews = async (e) => {
     e.preventDefault();
-    if (editingId) {
-        updateNews(editingId, newsForm);
-        setEditingId(null);
-    } else {
-        addNews(newsForm);
+    try {
+      if (editingId) {
+          await updateNews(editingId, newsForm);
+          setEditingId(null);
+      } else {
+          await addNews(newsForm);
+      }
+      setNewsForm({ text: '', type: 'normal' });
+    } catch (error) {
+      alert("Не удалось сохранить новость. Проверьте подключение или права доступа.");
     }
-    setNewsForm({ text: '', type: 'normal' });
   };
 
   const handleEditNews = (item) => {
@@ -419,19 +427,27 @@ const AdminPanel = ({ store, onClose }) => {
     setNewsForm({ text: item.text, type: item.type });
   };
 
-  const handleDeleteEvent = (id) => {
-    deleteEvent(id);
-    if (editingId === id) {
-        setEditingId(null);
-        setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
+  const handleDeleteEvent = async (id) => {
+    try {
+      await deleteEvent(id);
+      if (editingId === id) {
+          setEditingId(null);
+          setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
+      }
+    } catch (error) {
+      alert("Не удалось удалить событие.");
     }
   };
 
-  const handleDeleteNews = (id) => {
-    deleteNews(id);
-    if (editingId === id) {
-        setEditingId(null);
-        setNewsForm({ text: '', type: 'normal' });
+  const handleDeleteNews = async (id) => {
+    try {
+      await deleteNews(id);
+      if (editingId === id) {
+          setEditingId(null);
+          setNewsForm({ text: '', type: 'normal' });
+      }
+    } catch (error) {
+       alert("Не удалось удалить новость.");
     }
   };
 

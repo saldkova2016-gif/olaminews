@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db } from '../services/firebase';
+import { db, auth } from '../services/firebase';
+import { signInAnonymously } from 'firebase/auth';
 import {
   collection,
   addDoc,
@@ -47,41 +48,61 @@ export const useStore = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (db) {
-      setIsCloudEnabled(true);
+    let unsubscribeEvents = () => {};
+    let unsubscribeNews = () => {};
 
-      // Real-time Listeners
-      const qEvents = query(collection(db, "events"), orderBy("date"));
-      const unsubscribeEvents = onSnapshot(qEvents, (snapshot) => {
-        const cloudEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setEvents(cloudEvents);
-        if (cloudEvents.length === 0) setLoading(false); // Only stop loading if empty, else data load handles it
-      }, (error) => {
-          console.error("Cloud Events Error:", error);
-          loadFromLocal('olami_events', INITIAL_EVENTS, setEvents);
-      });
+    const initializeCloud = async () => {
+      if (db && auth) {
+        try {
+          await signInAnonymously(auth);
+          console.log("Signed in anonymously");
+          setIsCloudEnabled(true);
 
-      const qNews = query(collection(db, "news"), orderBy("id", "desc")); // Order by ID timestamp approx
-      const unsubscribeNews = onSnapshot(qNews, (snapshot) => {
-        const cloudNews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setNews(cloudNews);
-        setLoading(false);
-      }, (error) => {
-          console.error("Cloud News Error:", error);
-          loadFromLocal('olami_news', INITIAL_NEWS, setNews);
-      });
+          // Real-time Listeners
+          const qEvents = query(collection(db, "events"), orderBy("date"));
+          unsubscribeEvents = onSnapshot(qEvents, (snapshot) => {
+            const cloudEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setEvents(cloudEvents);
+            if (cloudEvents.length === 0) setLoading(false);
+          }, (error) => {
+              console.error("Cloud Events Error:", error);
+              handleCloudError();
+          });
 
-      return () => {
-        unsubscribeEvents();
-        unsubscribeNews();
-      };
-    } else {
-      // Local Fallback
+          const qNews = query(collection(db, "news"), orderBy("id", "desc"));
+          unsubscribeNews = onSnapshot(qNews, (snapshot) => {
+            const cloudNews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setNews(cloudNews);
+            setLoading(false);
+          }, (error) => {
+              console.error("Cloud News Error:", error);
+              handleCloudError();
+          });
+
+        } catch (error) {
+          console.error("Auth or Cloud Init Error:", error);
+          handleCloudError();
+        }
+      } else {
+        handleCloudError();
+      }
+    };
+
+    const handleCloudError = () => {
+      console.log("Falling back to local mode");
+      setIsCloudEnabled(false);
       loadFromLocal('olami_events', INITIAL_EVENTS, setEvents);
       loadFromLocal('olami_news', INITIAL_NEWS, setNews);
       setLoading(false);
-    }
-  }, [db]); // Added dependency on db to re-run if it initializes late
+    };
+
+    initializeCloud();
+
+    return () => {
+      unsubscribeEvents();
+      unsubscribeNews();
+    };
+  }, []); // Run once on mount
 
   // Helper to load local storage
   const loadFromLocal = (key, initial, setter) => {
@@ -122,7 +143,12 @@ export const useStore = () => {
   // Actions
   const addEvent = async (event) => {
     if (isCloudEnabled) {
-      await addDoc(collection(db, "events"), event);
+      try {
+        await addDoc(collection(db, "events"), event);
+      } catch (error) {
+        console.error("Error adding event:", error);
+        throw error;
+      }
     } else {
       setEvents(prev => [...prev, { ...event, id: Date.now() }]);
     }
@@ -130,8 +156,13 @@ export const useStore = () => {
 
   const updateEvent = async (id, updatedFields) => {
     if (isCloudEnabled) {
-      const eventRef = doc(db, "events", id);
-      await updateDoc(eventRef, updatedFields);
+      try {
+        const eventRef = doc(db, "events", id);
+        await updateDoc(eventRef, updatedFields);
+      } catch (error) {
+        console.error("Error updating event:", error);
+        throw error;
+      }
     } else {
       setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updatedFields } : e));
     }
@@ -139,7 +170,12 @@ export const useStore = () => {
 
   const deleteEvent = async (id) => {
     if (isCloudEnabled) {
-      await deleteDoc(doc(db, "events", id));
+      try {
+        await deleteDoc(doc(db, "events", id));
+      } catch (error) {
+        console.error("Error deleting event:", error);
+        throw error;
+      }
     } else {
       setEvents(prev => prev.filter(e => e.id !== id));
     }
@@ -147,7 +183,12 @@ export const useStore = () => {
 
   const addNews = async (item) => {
     if (isCloudEnabled) {
-      await addDoc(collection(db, "news"), { ...item, id: Date.now() }); // Use timestamp as order
+      try {
+        await addDoc(collection(db, "news"), { ...item, id: Date.now() });
+      } catch (error) {
+        console.error("Error adding news:", error);
+        throw error;
+      }
     } else {
       setNews(prev => [{ ...item, id: Date.now() }, ...prev]);
     }
@@ -155,8 +196,13 @@ export const useStore = () => {
 
   const updateNews = async (id, updatedFields) => {
     if (isCloudEnabled) {
-      const newsRef = doc(db, "news", id);
-      await updateDoc(newsRef, updatedFields);
+      try {
+        const newsRef = doc(db, "news", id);
+        await updateDoc(newsRef, updatedFields);
+      } catch (error) {
+        console.error("Error updating news:", error);
+        throw error;
+      }
     } else {
       setNews(prev => prev.map(n => n.id === id ? { ...n, ...updatedFields } : n));
     }
@@ -164,7 +210,12 @@ export const useStore = () => {
 
   const deleteNews = async (id) => {
     if (isCloudEnabled) {
-      await deleteDoc(doc(db, "news", id));
+      try {
+        await deleteDoc(doc(db, "news", id));
+      } catch (error) {
+        console.error("Error deleting news:", error);
+        throw error;
+      }
     } else {
       setNews(prev => prev.filter(n => n.id !== id));
     }
