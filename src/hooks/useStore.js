@@ -52,10 +52,19 @@ export const useStore = () => {
     let unsubscribeNews = () => {};
 
     const initializeCloud = async () => {
-      if (db && auth) {
+      if (db) {
+        // Attempt Auth, but don't fail hard if it's not configured
+        if (auth) {
+          try {
+            await signInAnonymously(auth);
+            console.log("Signed in anonymously");
+          } catch (error) {
+            console.warn("Auth failed (likely not enabled in console), attempting Firestore anyway...", error);
+          }
+        }
+
+        // Proceed to connect to Firestore regardless of Auth outcome
         try {
-          await signInAnonymously(auth);
-          console.log("Signed in anonymously");
           setIsCloudEnabled(true);
 
           // Real-time Listeners
@@ -80,7 +89,7 @@ export const useStore = () => {
           });
 
         } catch (error) {
-          console.error("Auth or Cloud Init Error:", error);
+          console.error("Cloud Init Error:", error);
           handleCloudError();
         }
       } else {
