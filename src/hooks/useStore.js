@@ -11,35 +11,11 @@ import {
   query,
   orderBy
 } from 'firebase/firestore';
+import { parseAfisha } from '../utils/afishaParser';
 
-const INITIAL_EVENTS = [
-  {
-    id: 1,
-    title: "Ханукальная Вечеринка",
-    description: "Зажигание свечей, пончики и музыкальный вечер для всех желающих.",
-    image: "https://images.unsplash.com/photo-1543092587-d8b8fe8327c9?auto=format&fit=crop&q=80&w=1000&h=1000",
-    link: "https://olami.moscow/hanukkah",
-    date: new Date(new Date().getTime() + 86400000).toISOString(),
-    duration: 120,
-  },
-  {
-    id: 2,
-    title: "Лекция: Бизнес и Тора",
-    description: "Специальный гость: Раввин Алекс Артовский. Обсудим этику бизнеса.",
-    image: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=1920",
-    link: "https://olami.moscow/lecture",
-    date: new Date(new Date().getTime() + 1000 * 60 * 30).toISOString(),
-    duration: 60,
-  }
-];
+const INITIAL_EVENTS = [];
 
-const INITIAL_NEWS = [
-  { id: 1, text: "Поздравляем Давида с помолвкой! Мазл Тов!", type: "normal" },
-  { id: 2, text: "Внимание! Изменилось время начала Шаббата.", type: "urgent" },
-  { id: 3, text: "Сегодня день рождения у Сары! Поздравляем!", type: "birthday" },
-  { id: 4, text: "Ханука Самеах! Зажигаем свечи в 18:00.", type: "holiday" },
-  { id: 5, text: "Забыт iPhone на ресепшн, просьба забрать.", type: "normal" }
-];
+const INITIAL_NEWS = [];
 
 export const useStore = () => {
   const [events, setEvents] = useState(INITIAL_EVENTS);
@@ -97,10 +73,31 @@ export const useStore = () => {
       }
     };
 
-    const handleCloudError = () => {
+    const handleCloudError = async () => {
       console.log("Falling back to local mode");
       setIsCloudEnabled(false);
-      loadFromLocal('olami_events', INITIAL_EVENTS, setEvents);
+
+      // Try to load from local storage first
+      const savedEvents = localStorage.getItem('olami_events');
+      if (savedEvents) {
+        setEvents(JSON.parse(savedEvents));
+      } else {
+        // If no local data, fetch from web
+        try {
+          const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://olami.moscow/afisha')}`);
+          if (response.ok) {
+            const data = await response.json();
+            const parsed = parseAfisha(data.contents);
+            if (parsed.length > 0) {
+              setEvents(parsed);
+              localStorage.setItem('olami_events', JSON.stringify(parsed));
+            }
+          }
+        } catch (e) {
+          console.error("Web fetch error:", e);
+        }
+      }
+
       loadFromLocal('olami_news', INITIAL_NEWS, setNews);
       setLoading(false);
     };
