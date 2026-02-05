@@ -12,7 +12,12 @@ import {
   Link as LinkIcon,
   Maximize2,
   X,
-  LayoutTemplate
+  LayoutTemplate,
+  Cake,
+  PartyPopper,
+  Info,
+  Loader2,
+  Edit2
 } from 'lucide-react';
 
 // --- MOCK DATA & CONSTANTS ---
@@ -23,11 +28,11 @@ const INITIAL_EVENTS = [
   {
     id: 1,
     title: "Ханукальная Вечеринка",
-    // Square image example to demonstrate new layout
     image: "https://images.unsplash.com/photo-1543092587-d8b8fe8327c9?auto=format&fit=crop&q=80&w=1000&h=1000",
     link: "https://olami.moscow/hanukkah",
     date: new Date(new Date().getTime() + 86400000).toISOString(), // Tomorrow
-    duration: 120, // minutes
+    duration: 120,
+    layout: 'square' // New property: 'full' or 'square'
   },
   {
     id: 2,
@@ -36,23 +41,31 @@ const INITIAL_EVENTS = [
     link: "https://olami.moscow/lecture",
     date: new Date(new Date().getTime() + 1000 * 60 * 30).toISOString(), // Starts in 30 mins
     duration: 60,
+    layout: 'full'
   }
 ];
 
 const INITIAL_NEWS = [
   { id: 1, text: "Поздравляем Давида с помолвкой! Мазл Тов!", type: "normal" },
   { id: 2, text: "Внимание! Изменилось время начала Шаббата.", type: "urgent" },
-  { id: 3, text: "Ищем волонтеров на упаковку подарков.", type: "normal" },
-  { id: 4, text: "Забыт iPhone на ресепшн, просьба забрать.", type: "normal" }
+  { id: 3, text: "Сегодня день рождения у Сары! Поздравляем!", type: "birthday" },
+  { id: 4, text: "Ханука Самеах! Зажигаем свечи в 18:00.", type: "holiday" },
+  { id: 5, text: "Забыт iPhone на ресепшн, просьба забрать.", type: "normal" }
 ];
 
-// Placeholder for the new logo. Replace URL below when ready.
 const OLAMI_LOGO = "https://static.tildacdn.com/tild3664-6533-4037-b864-376432303439/Vector.svg";
 
 // --- UTILS ---
 
-const generateQRCodeUrl = (data) => {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data)}&bgcolor=ffffff&color=000000&margin=10`;
+const generateQRCodeUrl = (link) => {
+  try {
+    const url = new URL(link.startsWith('http') ? link : `https://${link}`);
+    url.searchParams.set('utm_source', 'dashboard');
+    const finalLink = url.toString();
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(finalLink)}&bgcolor=ffffff&color=000000&margin=10`;
+  } catch (e) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(link)}&bgcolor=ffffff&color=000000&margin=10`;
+  }
 };
 
 const formatDate = (isoString) => {
@@ -65,37 +78,61 @@ const formatDate = (isoString) => {
 // 1. HEADER ZONE (Zone V)
 const Header = ({ toggleAdmin }) => {
   const [time, setTime] = useState(new Date());
+  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch Weather for Moscow
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(
+          'https://api.open-meteo.com/v1/forecast?latitude=55.7558&longitude=37.6173&current=temperature_2m&timezone=Europe%2FMoscow'
+        );
+        const data = await response.json();
+        if (data.current) {
+          setWeather(Math.round(data.current.temperature_2m));
+        }
+      } catch (error) {
+        console.error("Weather fetch failed", error);
+        setWeather(-5); // Fallback
+      }
+    };
+
+    fetchWeather();
+    const weatherInterval = setInterval(fetchWeather, 60000 * 30); // Every 30 mins
+    return () => clearInterval(weatherInterval);
+  }, []);
+
   const getShabbatTimer = () => {
     const now = new Date();
     const day = now.getDay();
     if (day === 5) {
-      return "Шаббат через 4ч 20мин";
+      return "Шаббат через 4ч 20мин"; // Mock logic remains for simplicity as strict calc wasn't requested changed
     }
     return "Шаббат: Пт, 18:42";
   };
 
   return (
-    // TV OPTIMIZATION: Increased height (h-24), padding (px-10), and font sizes
     <header className="h-24 bg-white border-b border-gray-200 flex items-center justify-between px-10 shadow-sm z-50 relative">
       <div className="flex items-center gap-6">
         <img src={OLAMI_LOGO} alt="Olami" className="h-16 w-auto object-contain" />
         <div className="h-10 w-px bg-gray-300 mx-2"></div>
         <div className="flex flex-col">
           <span className="text-2xl font-bold text-gray-800 leading-none">MOSCOW</span>
-          <span className="text-sm text-gray-500 tracking-wider font-semibold">SMART DASHBOARD</span>
+          {/* Removed "SMART DASHBOARD" text as requested */}
         </div>
       </div>
 
       <div className="flex items-center gap-10 text-gray-700">
         <div className="flex items-center gap-3">
           <CloudSun className="w-8 h-8" style={{ color: BRAND_COLOR }} />
-          <span className="text-2xl font-medium">+2°C</span>
+          <span className="text-2xl font-medium">
+            {weather !== null ? (weather > 0 ? `+${weather}` : weather) : '...'}°C
+          </span>
         </div>
 
         <div className="flex items-center gap-3 bg-gray-100 px-6 py-2 rounded-full">
@@ -121,12 +158,17 @@ const Header = ({ toggleAdmin }) => {
 // 2. MAIN STAGE (Zone A)
 const MainStage = ({ events }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (events.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % events.length);
-    }, 10000);
+      setIsLoading(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % events.length);
+        setIsLoading(false); // Simulate load or wait for image load
+      }, 500); // Short transition delay
+    }, 30000); // 30 seconds
     return () => clearInterval(interval);
   }, [events]);
 
@@ -151,7 +193,6 @@ const MainStage = ({ events }) => {
   let statusBadge = null;
   if (diffMinutes <= 60 && diffMinutes > 0) {
     statusBadge = (
-      // TV OPTIMIZATION: Larger badges and positioning (top-12, left-12)
       <div
         className="absolute top-12 left-12 text-white px-8 py-4 rounded-xl shadow-xl animate-bounce z-20 border-2 border-white/20"
         style={{ backgroundColor: BRAND_COLOR }}
@@ -167,67 +208,110 @@ const MainStage = ({ events }) => {
     );
   }
 
-  return (
-    <div className="relative w-full h-full bg-black overflow-hidden group">
-      {/* Layer 1: Blurred Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center blur-2xl opacity-60 scale-110 transition-all duration-1000"
-        style={{ backgroundImage: `url(${event.image})` }}
-      ></div>
-      <div className="absolute inset-0 bg-black/40"></div>
-
-      {/* Layer 2: The Actual Poster */}
-      {/* TV OPTIMIZATION: Increased bottom padding (pb-48) to lift image above text area */}
-      <div className="absolute inset-0 flex items-center justify-center p-12 pb-48">
+  // Common QR Block
+  const QrBlock = () => (
+    <div className="bg-white p-4 rounded-2xl shadow-2xl transform transition-transform hover:scale-105 flex flex-col items-center gap-3 max-w-[240px]">
+      <div className="relative w-[200px] h-[200px]">
         <img
-          src={event.image}
-          alt={event.title}
-          className="h-full w-auto object-contain shadow-2xl rounded-2xl max-w-full"
+          src={generateQRCodeUrl(event.link)}
+          alt="QR Registration"
+          className="w-full h-full object-contain"
         />
       </div>
+      <div className="text-center w-full">
+        <p
+          className="font-bold text-lg uppercase tracking-wide"
+          style={{ color: BRAND_COLOR }}
+        >
+          Регистрация
+        </p>
+      </div>
+    </div>
+  );
 
-      {statusBadge}
+  return (
+    <div className="relative w-full h-full bg-black overflow-hidden group">
+      {/* Loader Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
+          <Loader2 className="w-16 h-16 text-white animate-spin" />
+        </div>
+      )}
 
-      {/* Content Overlay */}
-      {/* TV OPTIMIZATION: Increased padding (p-14) for TV Safe Area */}
-      <div className="absolute bottom-0 left-0 right-0 p-14 flex items-end justify-between z-20 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
+      {/* Layout: Square (Split) */}
+      {event.layout === 'square' ? (
+        <div className="w-full h-full flex">
+          {/* Left: Image (Square/Vertical fit) */}
+          <div className="w-1/2 h-full bg-black relative flex items-center justify-center p-12">
+             <div className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30" style={{ backgroundImage: `url(${event.image})` }}></div>
+             <img
+               src={event.image}
+               alt={event.title}
+               className="relative z-10 max-h-full max-w-full object-contain shadow-2xl rounded-xl"
+             />
+             {statusBadge}
+          </div>
 
-        {/* Text Info */}
-        <div className="text-white max-w-4xl">
-          {/* TV OPTIMIZATION: Huge text (text-7xl) for readability from distance */}
-          <h2 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight drop-shadow-2xl text-white">
-            {event.title}
-          </h2>
-          <div className="flex items-center gap-6 text-2xl text-gray-100">
-            <span className="flex items-center gap-3 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20">
-              <Calendar className="w-8 h-8" /> {formatDate(event.date)}
-            </span>
+          {/* Right: Info */}
+          <div className="w-1/2 h-full bg-gray-900 text-white p-16 flex flex-col justify-start items-start relative">
+             <div className="absolute top-0 left-0 w-2 h-full" style={{ backgroundColor: BRAND_COLOR }}></div>
+
+             <div className="mt-12 w-full">
+                <h2 className="text-6xl font-bold mb-8 leading-tight">{event.title}</h2>
+                <div className="flex items-center gap-4 text-2xl text-gray-300 mb-12">
+                   <Calendar className="w-8 h-8" />
+                   <span>{formatDate(event.date)}</span>
+                </div>
+
+                <div className="flex flex-col gap-6">
+                   <QrBlock />
+                </div>
+             </div>
           </div>
         </div>
+      ) : (
+        /* Layout: Full Screen (Default) */
+        <>
+          {/* Layer 1: Blurred Background */}
+          <div
+            className="absolute inset-0 bg-cover bg-center blur-2xl opacity-60 scale-110 transition-all duration-1000"
+            style={{ backgroundImage: `url(${event.image})` }}
+          ></div>
+          <div className="absolute inset-0 bg-black/40"></div>
 
-        {/* QR Code Container */}
-        {/* TV OPTIMIZATION: Larger QR container (w-[240px]) for easier scanning */}
-        <div className="bg-white p-4 rounded-2xl shadow-2xl transform transition-transform hover:scale-105 flex flex-col items-center gap-3 max-w-[240px]">
-          <div className="relative w-[200px] h-[200px]">
+          {/* Layer 2: The Actual Poster */}
+          <div className="absolute inset-0 flex items-center justify-center p-12 pb-48">
             <img
-              src={generateQRCodeUrl(event.link)}
-              alt="QR Registration"
-              className="w-full h-full object-contain"
+              src={event.image}
+              alt={event.title}
+              className="h-full w-auto object-contain shadow-2xl rounded-2xl max-w-full"
             />
           </div>
-          <div className="text-center w-full">
-            <p
-              className="font-bold text-lg uppercase tracking-wide"
-              style={{ color: BRAND_COLOR }}
-            >
-              Регистрация
-            </p>
+
+          {statusBadge}
+
+          {/* Content Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-14 flex items-end justify-between z-20 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
+            {/* Text Info */}
+            <div className="text-white max-w-4xl">
+              <h2 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight drop-shadow-2xl text-white">
+                {event.title}
+              </h2>
+              <div className="flex items-center gap-6 text-2xl text-gray-100">
+                <span className="flex items-center gap-3 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20">
+                  <Calendar className="w-8 h-8" /> {formatDate(event.date)}
+                </span>
+              </div>
+            </div>
+
+            {/* QR Code Container */}
+            <QrBlock />
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 h-2 transition-all duration-1000"
+      <div className="absolute bottom-0 left-0 h-2 transition-all duration-1000 z-50"
            style={{ width: `${((currentIndex + 1) / events.length) * 100}%`, backgroundColor: BRAND_COLOR }}></div>
     </div>
   );
@@ -235,10 +319,46 @@ const MainStage = ({ events }) => {
 
 // 3. NEWS FEED (Zone B)
 const NewsFeed = ({ news }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const ITEMS_PER_PAGE = 3;
+
+  useEffect(() => {
+    if (news.length <= ITEMS_PER_PAGE) {
+        setCurrentPage(0);
+        return;
+    }
+    const interval = setInterval(() => {
+      setCurrentPage(prev => {
+        const totalPages = Math.ceil(news.length / ITEMS_PER_PAGE);
+        return (prev + 1) % totalPages;
+      });
+    }, 60000); // Rotate every minute
+    return () => clearInterval(interval);
+  }, [news.length]);
+
+  const visibleNews = news.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'birthday': return <Cake className="w-6 h-6 text-pink-500" />;
+      case 'holiday': return <PartyPopper className="w-6 h-6 text-yellow-500" />;
+      case 'urgent': return <AlertCircle className="w-6 h-6 text-red-500" />;
+      default: return <Info className="w-6 h-6 text-blue-500" />;
+    }
+  };
+
+  const getBorderColor = (type) => {
+    switch (type) {
+      case 'birthday': return '#EC4899'; // Pink
+      case 'holiday': return '#EAB308'; // Yellow
+      case 'urgent': return '#EF4444'; // Red
+      default: return BRAND_COLOR;
+    }
+  };
+
   return (
     <div className="h-full bg-gray-50 border-l border-gray-200 flex flex-col">
-      {/* TV OPTIMIZATION: Larger Header padding */}
-      <div className="p-8 bg-white border-b border-gray-200 shadow-sm z-10">
+      <div className="p-8 bg-white border-b border-gray-200 shadow-sm z-10 flex justify-between items-center">
         <h3
           className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"
           style={{ color: BRAND_COLOR }}
@@ -246,70 +366,125 @@ const NewsFeed = ({ news }) => {
           <LayoutTemplate className="w-7 h-7" />
           Дайджест
         </h3>
+        {news.length > ITEMS_PER_PAGE && (
+            <span className="text-sm text-gray-400">Стр {currentPage + 1}/{Math.ceil(news.length / ITEMS_PER_PAGE)}</span>
+        )}
       </div>
 
       <div className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 overflow-y-auto p-8 space-y-6 pb-24 scrollbar-hide">
-          {news.map((item) => (
+        <div className="absolute inset-0 p-8 space-y-6">
+          {visibleNews.map((item) => (
             <div
               key={item.id}
-              className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md bg-white`}
+              className={`p-6 rounded-2xl border shadow-sm transition-all hover:shadow-md bg-white animate-fade-in`}
               style={{
                 borderLeftWidth: '6px',
-                borderLeftColor: item.type === 'urgent' ? '#EF4444' : BRAND_COLOR // Red for urgent, Brand for normal
+                borderLeftColor: getBorderColor(item.type)
               }}
             >
-              {item.type === 'urgent' && (
-                <div className="flex items-center gap-2 text-red-600 mb-3">
-                  <AlertCircle className="w-5 h-5" />
-                  <span className="text-sm font-bold uppercase tracking-wide">Важно</span>
-                </div>
-              )}
-              {/* TV OPTIMIZATION: Larger text (text-2xl) and leading-normal for better reading */}
+              <div className="flex items-center gap-3 mb-3">
+                {getIcon(item.type)}
+                {item.type === 'urgent' && <span className="text-sm font-bold uppercase tracking-wide text-red-600">Важно</span>}
+                {item.type === 'birthday' && <span className="text-sm font-bold uppercase tracking-wide text-pink-600">День Рождения</span>}
+                {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
+              </div>
+
               <p className={`text-2xl leading-normal ${item.type === 'urgent' ? 'font-medium text-gray-900' : 'text-gray-700'}`}>
                 {item.text}
               </p>
             </div>
           ))}
-
-          <div className="sticky bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none"></div>
         </div>
       </div>
     </div>
   );
 };
 
-// 4. ADMIN PANEL (CMS) - Mostly unchanged, just keeping consistent styles
+// 4. ADMIN PANEL (CMS)
 const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const [activeTab, setActiveTab] = useState('events');
+  const [editingId, setEditingId] = useState(null);
 
-  const [newEvent, setNewEvent] = useState({
-    title: '', image: '', link: '', date: '', duration: 60
+  const [eventForm, setEventForm] = useState({
+    title: '', image: '', link: '', date: '', duration: 60, layout: 'full'
   });
 
-  const [newNewsItem, setNewNewsItem] = useState({
+  const [newsForm, setNewsForm] = useState({
     text: '', type: 'normal'
   });
 
-  const handleAddEvent = (e) => {
+  const handleSaveEvent = (e) => {
     e.preventDefault();
-    const event = {
-      id: Date.now(),
-      ...newEvent,
-      date: newEvent.date || new Date().toISOString()
-    };
-    setEvents([...events, event]);
-    setNewEvent({ title: '', image: '', link: '', date: '', duration: 60 });
+    if (editingId) {
+      // Edit
+      setEvents(events.map(ev => ev.id === editingId ? { ...ev, ...eventForm } : ev));
+      setEditingId(null);
+    } else {
+      // Create
+      const event = {
+        id: Date.now(),
+        ...eventForm,
+        date: eventForm.date || new Date().toISOString()
+      };
+      setEvents([...events, event]);
+    }
+    setEventForm({ title: '', image: '', link: '', date: '', duration: 60, layout: 'full' });
   };
 
-  const handleAddNews = (e) => {
-    e.preventDefault();
-    setNews([{ id: Date.now(), ...newNewsItem }, ...news]);
-    setNewNewsItem({ text: '', type: 'normal' });
+  const handleEditEvent = (event) => {
+    setEditingId(event.id);
+    // Format date for datetime-local input (YYYY-MM-DDThh:mm)
+    const formattedDate = event.date ? new Date(event.date).toISOString().substring(0, 16) : '';
+    setEventForm({
+        title: event.title,
+        image: event.image,
+        link: event.link,
+        date: formattedDate,
+        duration: event.duration,
+        layout: event.layout || 'full'
+    });
   };
 
-  const deleteEvent = (id) => setEvents(events.filter(e => e.id !== id));
-  const deleteNews = (id) => setNews(news.filter(n => n.id !== id));
+  const handleSaveNews = (e) => {
+    e.preventDefault();
+    if (editingId) {
+        setNews(news.map(n => n.id === editingId ? { ...n, ...newsForm } : n));
+        setEditingId(null);
+    } else {
+        setNews([{ id: Date.now(), ...newsForm }, ...news]);
+    }
+    setNewsForm({ text: '', type: 'normal' });
+  };
+
+  const handleEditNews = (item) => {
+    setEditingId(item.id);
+    setNewsForm({ text: item.text, type: item.type });
+  };
+
+  const deleteEvent = (id) => {
+    setEvents(events.filter(e => e.id !== id));
+    if (editingId === id) {
+        setEditingId(null);
+        setEventForm({ title: '', image: '', link: '', date: '', duration: 60, layout: 'full' });
+    }
+  };
+
+  const deleteNews = (id) => {
+    setNews(news.filter(n => n.id !== id));
+    if (editingId === id) {
+        setEditingId(null);
+        setNewsForm({ text: '', type: 'normal' });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    if (activeTab === 'events') {
+        setEventForm({ title: '', image: '', link: '', date: '', duration: 60, layout: 'full' });
+    } else {
+        setNewsForm({ text: '', type: 'normal' });
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-100 z-[100] overflow-y-auto font-sans">
@@ -331,18 +506,18 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
           {/* Tabs */}
           <div className="flex border-b border-gray-200">
             <button
-              onClick={() => setActiveTab('events')}
+              onClick={() => { setActiveTab('events'); cancelEdit(); }}
               className={`flex-1 py-4 text-center font-medium transition`}
               style={{
                 color: activeTab === 'events' ? BRAND_COLOR : '#6B7280',
                 borderBottom: activeTab === 'events' ? `2px solid ${BRAND_COLOR}` : 'none',
-                backgroundColor: activeTab === 'events' ? `${BRAND_COLOR}10` : 'transparent' // 10% opacity
+                backgroundColor: activeTab === 'events' ? `${BRAND_COLOR}10` : 'transparent'
               }}
             >
               Афиши и Мероприятия
             </button>
             <button
-              onClick={() => setActiveTab('news')}
+              onClick={() => { setActiveTab('news'); cancelEdit(); }}
               className={`flex-1 py-4 text-center font-medium transition`}
               style={{
                 color: activeTab === 'news' ? BRAND_COLOR : '#6B7280',
@@ -358,32 +533,45 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
             {activeTab === 'events' ? (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Form */}
-                <div className="lg:col-span-1 bg-gray-50 p-6 rounded-xl h-fit">
+                <div className="lg:col-span-1 bg-gray-50 p-6 rounded-xl h-fit border-2 border-transparent transition-all" style={{ borderColor: editingId ? BRAND_COLOR : 'transparent' }}>
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{color: BRAND_COLOR}}>
-                    <Plus className="w-5 h-5" /> Добавить событие
+                    {editingId ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    {editingId ? 'Редактировать событие' : 'Добавить событие'}
                   </h3>
-                  <form onSubmit={handleAddEvent} className="space-y-4">
+                  <form onSubmit={handleSaveEvent} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Название</label>
                       <input
                         required
                         type="text"
-                        value={newEvent.title}
-                        onChange={e => setNewEvent({...newEvent, title: e.target.value})}
+                        value={eventForm.title}
+                        onChange={e => setEventForm({...eventForm, title: e.target.value})}
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
                         style={{ '--tw-ring-color': BRAND_COLOR }}
                         placeholder="Например: Шаббат"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка на картинку (Квадрат или 16:9)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Макет</label>
+                      <select
+                        value={eventForm.layout}
+                        onChange={e => setEventForm({...eventForm, layout: e.target.value})}
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none bg-white"
+                        style={{ '--tw-ring-color': BRAND_COLOR }}
+                      >
+                        <option value="full">На весь экран (Обычный)</option>
+                        <option value="square">Квадратный (Слева)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка на картинку</label>
                       <div className="flex gap-2">
                         <ImageIcon className="w-5 h-5 text-gray-400 mt-2" />
                         <input
                           required
                           type="url"
-                          value={newEvent.image}
-                          onChange={e => setNewEvent({...newEvent, image: e.target.value})}
+                          value={eventForm.image}
+                          onChange={e => setEventForm({...eventForm, image: e.target.value})}
                           className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
                           style={{ '--tw-ring-color': BRAND_COLOR }}
                           placeholder="https://..."
@@ -397,8 +585,8 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         <input
                           required
                           type="text"
-                          value={newEvent.link}
-                          onChange={e => setNewEvent({...newEvent, link: e.target.value})}
+                          value={eventForm.link}
+                          onChange={e => setEventForm({...eventForm, link: e.target.value})}
                           className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
                           style={{ '--tw-ring-color': BRAND_COLOR }}
                           placeholder="olami.moscow/event"
@@ -410,26 +598,41 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                       <input
                         required
                         type="datetime-local"
-                        value={newEvent.date}
-                        onChange={e => setNewEvent({...newEvent, date: e.target.value})}
+                        value={eventForm.date}
+                        onChange={e => setEventForm({...eventForm, date: e.target.value})}
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
                         style={{ '--tw-ring-color': BRAND_COLOR }}
                       />
                     </div>
-                    <button
-                      type="submit"
-                      className="w-full text-white font-bold py-3 rounded-lg transition shadow-md hover:opacity-90"
-                      style={{ backgroundColor: BRAND_COLOR }}
-                    >
-                      Создать слайд
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                        type="submit"
+                        className="flex-1 text-white font-bold py-3 rounded-lg transition shadow-md hover:opacity-90"
+                        style={{ backgroundColor: BRAND_COLOR }}
+                        >
+                        {editingId ? 'Сохранить' : 'Создать'}
+                        </button>
+                        {editingId && (
+                            <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300"
+                            >
+                            <X className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
                   </form>
                 </div>
 
                 {/* List */}
                 <div className="lg:col-span-2 space-y-4">
                   {events.map(event => (
-                    <div key={event.id} className="flex gap-4 p-4 border border-gray-200 rounded-xl bg-white shadow-sm items-center">
+                    <div
+                        key={event.id}
+                        onClick={() => handleEditEvent(event)}
+                        className={`flex gap-4 p-4 border rounded-xl bg-white shadow-sm items-center cursor-pointer hover:border-purple-300 transition ${editingId === event.id ? 'ring-2 ring-purple-500 border-transparent' : 'border-gray-200'}`}
+                    >
                       <div className="w-24 h-16 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                         <img src={event.image} alt="" className="w-full h-full object-contain" />
                       </div>
@@ -437,11 +640,11 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         <h4 className="font-bold text-gray-900">{event.title}</h4>
                         <div className="text-sm text-gray-500 flex items-center gap-4 mt-1">
                           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(event.date)}</span>
+                          <span className="bg-gray-100 px-2 py-0.5 rounded text-xs uppercase">{event.layout === 'square' ? 'Квадрат' : 'Полный'}</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
-                         <img src={generateQRCodeUrl(event.link)} alt="qr" className="w-10 h-10 border" />
-                         <button onClick={() => deleteEvent(event.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition">
+                         <button onClick={(e) => { e.stopPropagation(); deleteEvent(event.id); }} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition z-10">
                            <Trash2 className="w-5 h-5" />
                          </button>
                       </div>
@@ -453,56 +656,78 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                  {/* News Form */}
-                 <div className="lg:col-span-1 bg-gray-50 p-6 rounded-xl h-fit">
+                 <div className="lg:col-span-1 bg-gray-50 p-6 rounded-xl h-fit border-2 border-transparent transition-all" style={{ borderColor: editingId ? BRAND_COLOR : 'transparent' }}>
                   <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{color: BRAND_COLOR}}>
-                    <Plus className="w-5 h-5" /> Добавить новость
+                    {editingId ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    {editingId ? 'Редактировать новость' : 'Добавить новость'}
                   </h3>
-                  <form onSubmit={handleAddNews} className="space-y-4">
+                  <form onSubmit={handleSaveNews} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Текст новости</label>
                       <textarea
                         required
                         maxLength={140}
                         rows={4}
-                        value={newNewsItem.text}
-                        onChange={e => setNewNewsItem({...newNewsItem, text: e.target.value})}
+                        value={newsForm.text}
+                        onChange={e => setNewsForm({...newsForm, text: e.target.value})}
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none resize-none"
                         style={{ '--tw-ring-color': BRAND_COLOR }}
                         placeholder="Максимум 140 символов"
                       />
-                      <div className="text-right text-xs text-gray-400">{newNewsItem.text.length}/140</div>
+                      <div className="text-right text-xs text-gray-400">{newsForm.text.length}/140</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Тип</label>
                       <select
-                        value={newNewsItem.type}
-                        onChange={e => setNewNewsItem({...newNewsItem, type: e.target.value})}
+                        value={newsForm.type}
+                        onChange={e => setNewsForm({...newsForm, type: e.target.value})}
                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none bg-white"
                         style={{ '--tw-ring-color': BRAND_COLOR }}
                       >
-                        <option value="normal">Обычная</option>
+                        <option value="normal">Обычная (Информация)</option>
                         <option value="urgent">Срочная (Важно)</option>
+                        <option value="birthday">День Рождения (Тортик)</option>
+                        <option value="holiday">Праздник (Конфетти)</option>
                       </select>
                     </div>
-                    <button
-                      type="submit"
-                      className="w-full text-white font-bold py-3 rounded-lg transition shadow-md hover:opacity-90"
-                      style={{ backgroundColor: BRAND_COLOR }}
-                    >
-                      Опубликовать
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                        type="submit"
+                        className="flex-1 text-white font-bold py-3 rounded-lg transition shadow-md hover:opacity-90"
+                        style={{ backgroundColor: BRAND_COLOR }}
+                        >
+                        {editingId ? 'Сохранить' : 'Опубликовать'}
+                        </button>
+                        {editingId && (
+                            <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300"
+                            >
+                            <X className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
                   </form>
                 </div>
 
                 {/* News List */}
                 <div className="lg:col-span-2 space-y-3">
                   {news.map(item => (
-                    <div key={item.id} className={`flex justify-between items-center p-4 rounded-xl border ${item.type === 'urgent' ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+                    <div
+                        key={item.id}
+                        onClick={() => handleEditNews(item)}
+                        className={`flex justify-between items-center p-4 rounded-xl border cursor-pointer hover:border-purple-300 transition ${editingId === item.id ? 'ring-2 ring-purple-500 border-transparent' : 'border-gray-200'} ${item.type === 'urgent' ? 'bg-red-50' : 'bg-white'}`}
+                    >
                       <div className="flex-1 pr-4">
-                         {item.type === 'urgent' && <span className="text-xs font-bold text-red-600 uppercase mb-1 block">Срочно</span>}
+                         <div className="flex items-center gap-2 mb-1">
+                            {item.type === 'urgent' && <span className="text-xs font-bold text-red-600 uppercase">Срочно</span>}
+                            {item.type === 'birthday' && <span className="text-xs font-bold text-pink-600 uppercase">День Рождения</span>}
+                            {item.type === 'holiday' && <span className="text-xs font-bold text-yellow-600 uppercase">Праздник</span>}
+                         </div>
                          <p className="text-gray-800">{item.text}</p>
                       </div>
-                      <button onClick={() => deleteNews(item.id)} className="text-gray-400 hover:text-red-500 p-2">
+                      <button onClick={(e) => { e.stopPropagation(); deleteNews(item.id); }} className="text-gray-400 hover:text-red-500 p-2 z-10">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
@@ -555,7 +780,6 @@ export default function App() {
       ) : (
         <>
           {/* Dashboard Grid Layout */}
-          {/* TV OPTIMIZATION: Updated grid rows to accommodate larger header (96px/6rem) */}
           <div className="h-full w-full grid grid-rows-[96px_1fr] grid-cols-[3fr_1fr]">
 
             {/* Zone C: Header */}
@@ -585,6 +809,13 @@ export default function App() {
         .scrollbar-hide {
             -ms-overflow-style: none;
             scrollbar-width: none;
+        }
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
         }
       `}</style>
     </div>
