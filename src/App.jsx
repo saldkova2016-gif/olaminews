@@ -244,15 +244,15 @@ const MainStage = ({ events }) => {
         style={{ backgroundImage: `url(${event.image})` }}
       ></div>
 
-      {/* Layout: Image Left (Square-ish), Content Right */}
-      <div className="relative z-10 w-full h-full flex p-12 gap-12 items-start">
-         {/* Left: Image (Original Aspect Ratio) */}
-         <div className="h-full w-1/2 flex-shrink-0 relative flex justify-center">
+      {/* Layout: Image Left (Maximized), Content Right */}
+      <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start">
+         {/* Left: Image (Original Aspect Ratio, Bigger) */}
+         <div className="h-full w-2/3 flex-shrink-0 relative flex justify-center items-start">
              <div className="relative max-h-full max-w-full">
                 <img
                 src={event.image}
                 alt={event.title}
-                className="max-h-[80vh] w-auto h-auto object-contain shadow-2xl rounded-2xl"
+                className="max-h-[90vh] w-auto h-auto object-contain shadow-2xl rounded-2xl"
                 />
                 {statusBadge}
              </div>
