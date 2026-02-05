@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStore } from './hooks/useStore';
 import {
   Clock,
@@ -165,6 +165,14 @@ const MainStage = ({ events }) => {
     };
   }, [events, currentIndex]);
 
+  const event = events[currentIndex];
+  const eventLink = event ? event.link : null;
+
+  const qrCodeUrl = useMemo(() => {
+    if (!eventLink) return '';
+    return generateQRCodeUrl(eventLink);
+  }, [eventLink]);
+
   if (events.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
@@ -175,8 +183,6 @@ const MainStage = ({ events }) => {
       </div>
     );
   }
-
-  const event = events[currentIndex];
 
   // Status Logic
   const eventDate = new Date(event.date);
@@ -245,7 +251,7 @@ const MainStage = ({ events }) => {
              <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
                 <div className="relative w-[250px] h-[250px]">
                     <img
-                    src={generateQRCodeUrl(event.link)}
+                    src={qrCodeUrl}
                     alt="QR Registration"
                     className="w-full h-full object-contain"
                     />
