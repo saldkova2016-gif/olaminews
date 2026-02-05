@@ -89,6 +89,23 @@ export const useStore = () => {
     setter(saved ? JSON.parse(saved) : initial);
   };
 
+  // Listen for storage events (Cross-tab sync in Local Mode)
+  useEffect(() => {
+    if (!isCloudEnabled) {
+      const handleStorageChange = (e) => {
+        if (e.key === 'olami_events') {
+          setEvents(e.newValue ? JSON.parse(e.newValue) : INITIAL_EVENTS);
+        }
+        if (e.key === 'olami_news') {
+          setNews(e.newValue ? JSON.parse(e.newValue) : INITIAL_NEWS);
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      return () => window.removeEventListener('storage', handleStorageChange);
+    }
+  }, [isCloudEnabled]);
+
   // Sync Local Logic (for fallback)
   useEffect(() => {
     if (!isCloudEnabled) {
