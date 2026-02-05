@@ -1,30 +1,27 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
-// Configuration loaded from Environment Variables
+// Configuration provided by user
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyDcEg8ZMKUmRbDTOUrTVt1Z2-VquIK_xVM",
+  authDomain: "didgestolami.firebaseapp.com",
+  projectId: "didgestolami",
+  storageBucket: "didgestolami.firebasestorage.app",
+  messagingSenderId: "29075324631",
+  appId: "1:29075324631:web:76131110e7cb86f58e3a92",
+  measurementId: "G-8BQ86W56DT"
 };
 
-// Initialize only if config is present
+// Initialize Firebase
 let app;
 let db;
 
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-  try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    console.log("Firebase initialized successfully.");
-  } catch (error) {
-    console.error("Firebase initialization failed:", error);
-  }
-} else {
-  console.log("Firebase config missing. Running in local mode.");
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  console.log("Firebase initialized successfully with provided config.");
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
 }
 
 export { db };
