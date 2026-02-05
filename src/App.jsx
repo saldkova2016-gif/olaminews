@@ -3,7 +3,6 @@ import {
   Clock,
   CloudSun,
   Calendar,
-  MapPin,
   Settings,
   Plus,
   Trash2,
@@ -32,7 +31,6 @@ const INITIAL_EVENTS = [
     link: "https://olami.moscow/hanukkah",
     date: new Date(new Date().getTime() + 86400000).toISOString(), // Tomorrow
     duration: 120,
-    layout: 'square' // New property: 'full' or 'square'
   },
   {
     id: 2,
@@ -41,7 +39,6 @@ const INITIAL_EVENTS = [
     link: "https://olami.moscow/lecture",
     date: new Date(new Date().getTime() + 1000 * 60 * 30).toISOString(), // Starts in 30 mins
     duration: 60,
-    layout: 'full'
   }
 ];
 
@@ -111,7 +108,7 @@ const Header = ({ toggleAdmin }) => {
     const now = new Date();
     const day = now.getDay();
     if (day === 5) {
-      return "Шаббат через 4ч 20мин"; // Mock logic remains for simplicity as strict calc wasn't requested changed
+      return "Шаббат через 4ч 20мин";
     }
     return "Шаббат: Пт, 18:42";
   };
@@ -121,10 +118,7 @@ const Header = ({ toggleAdmin }) => {
       <div className="flex items-center gap-6">
         <img src={OLAMI_LOGO} alt="Olami" className="h-16 w-auto object-contain" />
         <div className="h-10 w-px bg-gray-300 mx-2"></div>
-        <div className="flex flex-col">
-          <span className="text-2xl font-bold text-gray-800 leading-none">MOSCOW</span>
-          {/* Removed "SMART DASHBOARD" text as requested */}
-        </div>
+        {/* Removed "MOSCOW" and "SMART DASHBOARD" text entirely as requested */}
       </div>
 
       <div className="flex items-center gap-10 text-gray-700">
@@ -159,18 +153,37 @@ const Header = ({ toggleAdmin }) => {
 const MainStage = ({ events }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0); // For progress bar/loader animation
+
+  const INTERVAL_MS = 60000; // 60 seconds per slide as requested ("minute")
 
   useEffect(() => {
     if (events.length <= 1) return;
-    const interval = setInterval(() => {
+
+    setProgress(0);
+    const step = 100 / (INTERVAL_MS / 100); // Update every 100ms
+
+    const progressTimer = setInterval(() => {
+        setProgress(prev => {
+            if (prev >= 100) return 100;
+            return prev + step;
+        });
+    }, 100);
+
+    const slideTimer = setInterval(() => {
       setIsLoading(true);
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % events.length);
-        setIsLoading(false); // Simulate load or wait for image load
-      }, 500); // Short transition delay
-    }, 30000); // 30 seconds
-    return () => clearInterval(interval);
-  }, [events]);
+        setIsLoading(false);
+        setProgress(0); // Reset progress
+      }, 500);
+    }, INTERVAL_MS);
+
+    return () => {
+        clearInterval(progressTimer);
+        clearInterval(slideTimer);
+    };
+  }, [events, currentIndex]); // Reset when index changes to restart progress
 
   if (events.length === 0) {
     return (
@@ -194,43 +207,22 @@ const MainStage = ({ events }) => {
   if (diffMinutes <= 60 && diffMinutes > 0) {
     statusBadge = (
       <div
-        className="absolute top-12 left-12 text-white px-8 py-4 rounded-xl shadow-xl animate-bounce z-20 border-2 border-white/20"
+        className="absolute top-6 left-6 text-white px-6 py-3 rounded-xl shadow-xl animate-bounce z-20 border-2 border-white/20"
         style={{ backgroundColor: BRAND_COLOR }}
       >
-        <span className="text-3xl font-bold uppercase tracking-wider">Начало через {diffMinutes} мин</span>
+        <span className="text-2xl font-bold uppercase tracking-wider">Начало через {diffMinutes} мин</span>
       </div>
     );
   } else if (diffMinutes <= 0 && diffMinutes > -event.duration) {
      statusBadge = (
-      <div className="absolute top-12 left-12 bg-green-600 text-white px-8 py-4 rounded-xl shadow-xl z-20">
-        <span className="text-3xl font-bold uppercase animate-pulse tracking-wider">ПРЯМО СЕЙЧАС</span>
+      <div className="absolute top-6 left-6 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-20">
+        <span className="text-2xl font-bold uppercase animate-pulse tracking-wider">ПРЯМО СЕЙЧАС</span>
       </div>
     );
   }
 
-  // Common QR Block
-  const QrBlock = () => (
-    <div className="bg-white p-4 rounded-2xl shadow-2xl transform transition-transform hover:scale-105 flex flex-col items-center gap-3 max-w-[240px]">
-      <div className="relative w-[200px] h-[200px]">
-        <img
-          src={generateQRCodeUrl(event.link)}
-          alt="QR Registration"
-          className="w-full h-full object-contain"
-        />
-      </div>
-      <div className="text-center w-full">
-        <p
-          className="font-bold text-lg uppercase tracking-wide"
-          style={{ color: BRAND_COLOR }}
-        >
-          Регистрация
-        </p>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden group">
+    <div className="relative w-full h-full bg-black overflow-hidden flex">
       {/* Loader Overlay */}
       {isLoading && (
         <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
@@ -238,81 +230,64 @@ const MainStage = ({ events }) => {
         </div>
       )}
 
-      {/* Layout: Square (Split) */}
-      {event.layout === 'square' ? (
-        <div className="w-full h-full flex">
-          {/* Left: Image (Square/Vertical fit) */}
-          <div className="w-1/2 h-full bg-black relative flex items-center justify-center p-12">
-             <div className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30" style={{ backgroundImage: `url(${event.image})` }}></div>
+      {/* Background Blur */}
+      <div
+        className="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-110"
+        style={{ backgroundImage: `url(${event.image})` }}
+      ></div>
+
+      {/* Layout: Image Left, Content Right */}
+      <div className="relative z-10 w-full h-full flex p-12 gap-12 items-start">
+         {/* Left: Image (Bigger) */}
+         <div className="h-full w-3/5 flex-shrink-0 relative">
              <img
                src={event.image}
                alt={event.title}
-               className="relative z-10 max-h-full max-w-full object-contain shadow-2xl rounded-xl"
+               className="h-full w-full object-contain object-left-top shadow-2xl rounded-2xl"
              />
              {statusBadge}
-          </div>
+         </div>
 
-          {/* Right: Info */}
-          <div className="w-1/2 h-full bg-gray-900 text-white p-16 flex flex-col justify-start items-start relative">
-             <div className="absolute top-0 left-0 w-2 h-full" style={{ backgroundColor: BRAND_COLOR }}></div>
-
-             <div className="mt-12 w-full">
-                <h2 className="text-6xl font-bold mb-8 leading-tight">{event.title}</h2>
-                <div className="flex items-center gap-4 text-2xl text-gray-300 mb-12">
-                   <Calendar className="w-8 h-8" />
-                   <span>{formatDate(event.date)}</span>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                   <QrBlock />
-                </div>
-             </div>
-          </div>
-        </div>
-      ) : (
-        /* Layout: Full Screen (Default) */
-        <>
-          {/* Layer 1: Blurred Background */}
-          <div
-            className="absolute inset-0 bg-cover bg-center blur-2xl opacity-60 scale-110 transition-all duration-1000"
-            style={{ backgroundImage: `url(${event.image})` }}
-          ></div>
-          <div className="absolute inset-0 bg-black/40"></div>
-
-          {/* Layer 2: The Actual Poster */}
-          <div className="absolute inset-0 flex items-center justify-center p-12 pb-48">
-            <img
-              src={event.image}
-              alt={event.title}
-              className="h-full w-auto object-contain shadow-2xl rounded-2xl max-w-full"
-            />
-          </div>
-
-          {statusBadge}
-
-          {/* Content Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-14 flex items-end justify-between z-20 bg-gradient-to-t from-black/95 via-black/60 to-transparent">
-            {/* Text Info */}
-            <div className="text-white max-w-4xl">
-              <h2 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight drop-shadow-2xl text-white">
+         {/* Right: Content (Title Top-Aligned with Image, QR Below) */}
+         <div className="flex-1 flex flex-col items-start pt-4">
+             <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-8">
                 {event.title}
-              </h2>
-              <div className="flex items-center gap-6 text-2xl text-gray-100">
-                <span className="flex items-center gap-3 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20">
-                  <Calendar className="w-8 h-8" /> {formatDate(event.date)}
-                </span>
-              </div>
-            </div>
+             </h2>
 
-            {/* QR Code Container */}
-            <QrBlock />
-          </div>
-        </>
-      )}
+             <div className="flex items-center gap-4 text-2xl text-gray-300 mb-12 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit">
+                 <Calendar className="w-8 h-8" />
+                 <span>{formatDate(event.date)}</span>
+             </div>
 
-      {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 h-2 transition-all duration-1000 z-50"
-           style={{ width: `${((currentIndex + 1) / events.length) * 100}%`, backgroundColor: BRAND_COLOR }}></div>
+             {/* QR Code Block */}
+             <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
+                <div className="relative w-[250px] h-[250px]">
+                    <img
+                    src={generateQRCodeUrl(event.link)}
+                    alt="QR Registration"
+                    className="w-full h-full object-contain"
+                    />
+                </div>
+                <p
+                    className="font-bold text-xl uppercase tracking-wide"
+                    style={{ color: BRAND_COLOR }}
+                >
+                    Регистрация
+                </p>
+             </div>
+         </div>
+      </div>
+
+      {/* Progress Bar Loader (Bottom) */}
+      <div className="absolute bottom-0 left-0 h-3 bg-gray-800 w-full z-50">
+          <div
+            className="h-full transition-all duration-100 ease-linear"
+            style={{
+                width: `${progress}%`,
+                backgroundColor: BRAND_COLOR
+            }}
+          ></div>
+      </div>
     </div>
   );
 };
@@ -332,7 +307,7 @@ const NewsFeed = ({ news }) => {
         const totalPages = Math.ceil(news.length / ITEMS_PER_PAGE);
         return (prev + 1) % totalPages;
       });
-    }, 60000); // Rotate every minute
+    }, 60000);
     return () => clearInterval(interval);
   }, [news.length]);
 
@@ -340,10 +315,10 @@ const NewsFeed = ({ news }) => {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'birthday': return <Cake className="w-6 h-6 text-pink-500" />;
-      case 'holiday': return <PartyPopper className="w-6 h-6 text-yellow-500" />;
-      case 'urgent': return <AlertCircle className="w-6 h-6 text-red-500" />;
-      default: return <Info className="w-6 h-6 text-blue-500" />;
+      case 'birthday': return <Cake className="w-6 h-6 text-pink-500 flex-shrink-0" />;
+      case 'holiday': return <PartyPopper className="w-6 h-6 text-yellow-500 flex-shrink-0" />;
+      case 'urgent': return <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />;
+      default: return <Info className="w-6 h-6 text-blue-500 flex-shrink-0" />;
     }
   };
 
@@ -406,7 +381,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const [editingId, setEditingId] = useState(null);
 
   const [eventForm, setEventForm] = useState({
-    title: '', image: '', link: '', date: '', duration: 60, layout: 'full'
+    title: '', image: '', link: '', date: '', duration: 60
   });
 
   const [newsForm, setNewsForm] = useState({
@@ -416,11 +391,9 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const handleSaveEvent = (e) => {
     e.preventDefault();
     if (editingId) {
-      // Edit
       setEvents(events.map(ev => ev.id === editingId ? { ...ev, ...eventForm } : ev));
       setEditingId(null);
     } else {
-      // Create
       const event = {
         id: Date.now(),
         ...eventForm,
@@ -428,20 +401,18 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
       };
       setEvents([...events, event]);
     }
-    setEventForm({ title: '', image: '', link: '', date: '', duration: 60, layout: 'full' });
+    setEventForm({ title: '', image: '', link: '', date: '', duration: 60 });
   };
 
   const handleEditEvent = (event) => {
     setEditingId(event.id);
-    // Format date for datetime-local input (YYYY-MM-DDThh:mm)
     const formattedDate = event.date ? new Date(event.date).toISOString().substring(0, 16) : '';
     setEventForm({
         title: event.title,
         image: event.image,
         link: event.link,
         date: formattedDate,
-        duration: event.duration,
-        layout: event.layout || 'full'
+        duration: event.duration
     });
   };
 
@@ -465,7 +436,7 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
     setEvents(events.filter(e => e.id !== id));
     if (editingId === id) {
         setEditingId(null);
-        setEventForm({ title: '', image: '', link: '', date: '', duration: 60, layout: 'full' });
+        setEventForm({ title: '', image: '', link: '', date: '', duration: 60 });
     }
   };
 
@@ -480,9 +451,18 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
   const cancelEdit = () => {
     setEditingId(null);
     if (activeTab === 'events') {
-        setEventForm({ title: '', image: '', link: '', date: '', duration: 60, layout: 'full' });
+        setEventForm({ title: '', image: '', link: '', date: '', duration: 60 });
     } else {
         setNewsForm({ text: '', type: 'normal' });
+    }
+  };
+
+  const getNewsIcon = (type) => {
+    switch (type) {
+        case 'birthday': return <Cake className="w-5 h-5 text-pink-500" />;
+        case 'holiday': return <PartyPopper className="w-5 h-5 text-yellow-500" />;
+        case 'urgent': return <AlertCircle className="w-5 h-5 text-red-500" />;
+        default: return <Info className="w-5 h-5 text-blue-500" />;
     }
   };
 
@@ -550,18 +530,6 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         style={{ '--tw-ring-color': BRAND_COLOR }}
                         placeholder="Например: Шаббат"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Макет</label>
-                      <select
-                        value={eventForm.layout}
-                        onChange={e => setEventForm({...eventForm, layout: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none bg-white"
-                        style={{ '--tw-ring-color': BRAND_COLOR }}
-                      >
-                        <option value="full">На весь экран (Обычный)</option>
-                        <option value="square">Квадратный (Слева)</option>
-                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка на картинку</label>
@@ -640,7 +608,6 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                         <h4 className="font-bold text-gray-900">{event.title}</h4>
                         <div className="text-sm text-gray-500 flex items-center gap-4 mt-1">
                           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(event.date)}</span>
-                          <span className="bg-gray-100 px-2 py-0.5 rounded text-xs uppercase">{event.layout === 'square' ? 'Квадрат' : 'Полный'}</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
@@ -721,6 +688,8 @@ const AdminPanel = ({ events, setEvents, news, setNews, onClose }) => {
                     >
                       <div className="flex-1 pr-4">
                          <div className="flex items-center gap-2 mb-1">
+                            {/* News Icons visible in Admin List now */}
+                            {getNewsIcon(item.type)}
                             {item.type === 'urgent' && <span className="text-xs font-bold text-red-600 uppercase">Срочно</span>}
                             {item.type === 'birthday' && <span className="text-xs font-bold text-pink-600 uppercase">День Рождения</span>}
                             {item.type === 'holiday' && <span className="text-xs font-bold text-yellow-600 uppercase">Праздник</span>}
