@@ -13,12 +13,3 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
-
-/* Slick Carousel Full Height Fixes */
-.slick-slider, .slick-list, .slick-track, .slick-slide {
-  height: 100%;
-}
-
-.slick-slide > div {
-  height: 100%;
-}
