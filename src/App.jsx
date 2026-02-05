@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from './hooks/useStore';
+import { DateTime } from 'luxon';
 import {
   Clock,
   CloudSun,
@@ -59,6 +60,7 @@ const formatDate = (isoString) => {
 const Header = ({ toggleAdmin }) => {
   const [time, setTime] = useState(new Date());
   const [weather, setWeather] = useState(null);
+  const [shabbatDate, setShabbatDate] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -86,13 +88,37 @@ const Header = ({ toggleAdmin }) => {
     return () => clearInterval(weatherInterval);
   }, []);
 
+  useEffect(() => {
+    const fetchShabbat = async () => {
+      try {
+        const response = await fetch('https://www.hebcal.com/shabbat?cfg=json&geonameid=524901&M=on');
+        const data = await response.json();
+        const candlesItem = data.items.find(item => item.category === 'candles');
+        if (candlesItem) {
+          setShabbatDate(new Date(candlesItem.date));
+        }
+      } catch (error) {
+        console.error("Shabbat fetch failed", error);
+      }
+    };
+
+    fetchShabbat();
+    const interval = setInterval(fetchShabbat, 1000 * 60 * 60 * 6);
+    return () => clearInterval(interval);
+  }, []);
+
   const getShabbatTimer = () => {
-    const now = new Date();
-    const day = now.getDay();
-    if (day === 5) {
-      return "Шаббат через 4ч 20мин";
+    if (!shabbatDate) return "Загрузка...";
+
+    const now = DateTime.now().setZone('Europe/Moscow');
+    const shabbat = DateTime.fromJSDate(shabbatDate).setZone('Europe/Moscow');
+
+    if (now.hasSame(shabbat, 'day') && now < shabbat) {
+      const diff = shabbat.diff(now, ['hours', 'minutes']);
+      return `Шаббат через ${diff.hours}ч ${Math.floor(diff.minutes)}мин`;
     }
-    return "Шаббат: Пт, 18:42";
+
+    return `Шаббат: Пт, ${shabbat.toFormat('HH:mm')}`;
   };
 
   return (
