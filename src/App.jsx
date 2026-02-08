@@ -280,10 +280,10 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
   return (
     <div className={`relative w-full h-full overflow-hidden flex bg-transparent`}>
       {compact ? (
-        // Compact Overlay View
-        <div className="w-full flex items-center gap-6 px-8 py-6 bg-black/60 backdrop-blur-xl border-t border-white/10 shadow-2xl">
+        // Compact Overlay View (Floating Card)
+        <div className="w-auto max-w-xl absolute bottom-12 right-12 flex items-center gap-6 px-8 py-6 bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl animate-fade-in">
              {/* Thumbnail */}
-             <div className="w-24 h-24 flex-shrink-0 bg-white/10 rounded-lg overflow-hidden border border-white/20">
+             <div className="w-24 h-24 flex-shrink-0 bg-white/10 rounded-xl overflow-hidden border border-white/20 shadow-lg">
                 <img
                     src={event.image}
                     alt=""
@@ -291,29 +291,29 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
                 />
              </div>
 
-             <div className="flex-1 min-w-0">
-                 <h2 className="text-3xl font-bold text-white mb-2 truncate">
+             <div className="flex-1 min-w-0 pr-4">
+                 <h2 className="text-2xl font-bold text-white mb-1 line-clamp-2">
                     {event.title}
                  </h2>
-                 <div className="flex items-center gap-2 text-xl text-gray-300">
+                 <div className="flex items-center gap-2 text-lg text-gray-300">
                      <Calendar className="w-5 h-5 text-[#7652FF]" />
                      <span>{formatDate(event.date)}</span>
                  </div>
              </div>
 
              {/* Registration & QR */}
-             <div className="flex items-center gap-4 border-l border-white/20 pl-6">
-                 <p className="text-white font-bold uppercase text-right leading-tight max-w-[150px]">
-                     Регистрация на мероприятие
-                 </p>
-                 <div className="bg-white p-2 rounded-lg flex-shrink-0">
+             <div className="flex flex-col items-center gap-2 border-l border-white/20 pl-6">
+                 <div className="bg-white p-2 rounded-xl flex-shrink-0">
                     <QRCodeSVG
                         value={getQRCodeValue(event.link)}
-                        size={80}
+                        size={100}
                         level="M"
                         includeMargin={false}
                     />
                  </div>
+                 <p className="text-white font-bold uppercase text-center text-sm tracking-wider opacity-80">
+                     Регистрация
+                 </p>
              </div>
         </div>
       ) : (
