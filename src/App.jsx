@@ -223,8 +223,11 @@ export const BackgroundLayer = ({ theme, slideshowMode, events, currentEventInde
     );
 };
 
-export const MainStage = ({ events, theme, compact = false, currentEventIndex }) => {
+export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex }) => {
   const [isLoading, setIsLoading] = useState(false);
+
+  // Map 'sidebar' mode to the internal concept of 'compact' for layout reuse
+  const isCompact = mode === 'sidebar';
 
   // Use prop index to determine event
   const event = events[currentEventIndex];
@@ -258,7 +261,7 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
   if (diffMinutes <= 60 && diffMinutes > 0) {
     statusBadge = (
       <div
-        className={`absolute top-4 left-4 text-white rounded-lg shadow-lg z-20 animate-bounce ${compact ? 'px-3 py-1 text-sm' : 'px-6 py-3 text-2xl border-2 border-white/20'}`}
+        className={`absolute top-4 left-4 text-white rounded-lg shadow-lg z-20 animate-bounce ${isCompact ? 'px-3 py-1 text-sm' : 'px-6 py-3 text-2xl border-2 border-white/20'}`}
         style={{ backgroundColor: BRAND_COLOR }}
       >
         <span className="font-bold uppercase tracking-wider">Начало через {diffMinutes} мин</span>
@@ -266,54 +269,58 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
     );
   } else if (diffMinutes <= 0 && diffMinutes > -event.duration) {
      statusBadge = (
-      <div className={`absolute top-4 left-4 bg-green-600 text-white rounded-lg shadow-lg z-20 ${compact ? 'px-3 py-1 text-sm' : 'px-6 py-3 text-2xl'}`}>
+      <div className={`absolute top-4 left-4 bg-green-600 text-white rounded-lg shadow-lg z-20 ${isCompact ? 'px-3 py-1 text-sm' : 'px-6 py-3 text-2xl'}`}>
         <span className="font-bold uppercase animate-pulse tracking-wider">ПРЯМО СЕЙЧАС</span>
       </div>
     );
   }
 
-  // Use explicit dark/light text logic. If not compact (standard mode), always use light text on dark bg.
-  // In compact mode (Slideshow), the background is always dark (bg-black/60), so text must be white even in Light Theme.
-  const textColor = (!compact || compact || theme === 'dark') ? 'text-white' : 'text-gray-900';
-  const dateColor = (!compact || compact || theme === 'dark') ? 'text-gray-200' : 'text-gray-600';
+  // Use explicit dark/light text logic.
+  // In Standard Mode, the background is the event image (dark/colorful), so text is white.
+  // In Sidebar/Compact Mode, we force a dark background, so text is white.
+  // We effectively always want white text for readability.
+  const textColor = 'text-white';
+  const dateColor = 'text-gray-200';
 
   return (
     <div className={`relative w-full h-full overflow-hidden flex bg-transparent`}>
-      {compact ? (
-        // Compact Overlay View (Floating Card)
-        <div className="w-auto max-w-xl absolute bottom-12 right-12 flex items-center gap-6 px-8 py-6 bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl animate-fade-in">
+      {isCompact ? (
+        // Sidebar / Compact View
+        // Centered Vertical Layout for the Right Column
+        <div className="w-full h-full flex flex-col items-center justify-center p-8 gap-6 animate-fade-in text-center">
              {/* Thumbnail */}
-             <div className="w-24 h-24 flex-shrink-0 bg-white/10 rounded-xl overflow-hidden border border-white/20 shadow-lg">
+             <div className="w-64 h-64 bg-white/10 rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative group">
                 <img
                     src={event.image}
                     alt=""
                     className="w-full h-full object-cover"
                 />
+                {statusBadge && <div className="absolute top-2 left-2 scale-75 origin-top-left">{statusBadge}</div>}
              </div>
 
-             <div className="flex-1 min-w-0 pr-4">
-                 <h2 className="text-2xl font-bold text-white mb-1 line-clamp-2">
+             <div className="flex flex-col items-center gap-2">
+                 <h2 className="text-3xl font-bold text-white leading-tight line-clamp-3">
                     {event.title}
                  </h2>
-                 <div className="flex items-center gap-2 text-lg text-gray-300">
+                 <div className="flex items-center gap-2 text-xl text-gray-300 bg-white/10 px-4 py-2 rounded-lg">
                      <Calendar className="w-5 h-5 text-[#7652FF]" />
                      <span>{formatDate(event.date)}</span>
                  </div>
              </div>
 
              {/* Registration & QR */}
-             <div className="flex flex-col items-center gap-2 border-l border-white/20 pl-6">
-                 <div className="bg-white p-2 rounded-xl flex-shrink-0">
+             <div className="flex flex-col items-center gap-3 mt-4 bg-white/5 p-4 rounded-2xl border border-white/10 w-full max-w-xs">
+                 <p className="text-white/80 font-bold uppercase text-sm tracking-widest">
+                     Регистрация
+                 </p>
+                 <div className="bg-white p-2 rounded-xl">
                     <QRCodeSVG
                         value={getQRCodeValue(event.link)}
-                        size={100}
+                        size={180}
                         level="M"
                         includeMargin={false}
                     />
                  </div>
-                 <p className="text-white font-bold uppercase text-center text-sm tracking-wider opacity-80">
-                     Регистрация
-                 </p>
              </div>
         </div>
       ) : (
@@ -366,7 +373,7 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
         </div>
       )}
 
-      {events.length > 1 && (
+      {events.length > 1 && !isCompact && (
         <ProgressBar duration={60000} key={currentEventIndex} />
       )}
     </div>
@@ -650,67 +657,46 @@ export default function App() {
 
                 {/* Left Column (Main) */}
                 <div className="relative w-full h-full flex flex-col overflow-hidden rounded-r-2xl">
-                    {/* Standard Mode: MainStage (Transparent BG) */}
+                    {/* Standard Mode: MainStage */}
                     {!slideshowMode && (
                         <MainStage
                             events={store.events}
                             theme={theme}
-                            compact={false}
+                            mode="standard"
                             currentEventIndex={currentEventIndex}
                         />
                     )}
 
-                    {/* Slideshow Mode: MainStage Overlay (Transparent BG) */}
+                    {/* Slideshow Mode: Photos + Progress Bar */}
                     {slideshowMode && (
                         <>
-                            {/* Photos contained in this column */}
                             <div className="absolute inset-0 z-0">
                                 <PhotoSlideshow />
                             </div>
-
-                            {/* Spacer to push content down if needed, or just overlay at bottom */}
-                            <div className="flex-1 pointer-events-none"></div>
-
-                            {/* Compact Afisha Overlay at Bottom */}
-                            <div className="z-10">
-                                <MainStage
-                                    events={store.events}
-                                    theme={theme}
-                                    compact={true}
-                                    currentEventIndex={currentEventIndex}
-                                />
-                            </div>
+                            <ProgressBar duration={60000} key={currentEventIndex} />
                         </>
                     )}
                 </div>
 
-                {/* Right Column (News) */}
+                {/* Right Column (News or Sidebar Event) */}
                 <div
                     className={`h-full overflow-hidden border-l ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}
                     style={{
-                        // Semi-transparent BG to let blur show through slightly, or solid if preferred?
-                        // User wants "substrate" fixed. If we make this transparent, the blur/slideshow shows through.
-                        // Standard Mode: We want solid theme color usually on the right?
-                        // Actually, traditionally News has a solid BG.
-                        // If we scale this container, and it has a BG, it shrinks.
-                        // So the BG *must* be on Layer 0 if we want it to extend to edge.
-                        // BUT News column divides the screen vertically. Layer 0 is full screen.
-                        // Compromise: Make NewsFeed background transparent and rely on Root BG?
-                        // If Root BG is solid (Standard Mode), that works.
-                        // If Root BG is Blur Image (Standard Mode left side), then NewsFeed needs to cover it?
-                        // Wait, Standard Mode: Left is Blur, Right is Solid Theme Color.
-                        // BackgroundLayer currently covers *entire* screen.
-                        // If BackgroundLayer shows the Event Image Blur, it covers the whole screen.
-                        // Then NewsFeed needs a solid background to sit on top of it.
-                        // AND that solid background must NOT shrink.
-                        // This implies the 2-column split must exist in the UN-SCALED layer too?
-                        // Or we accept that the NewsFeed BG scales?
-                        // User said: "dark background substrate under posters and photos... must scale automatically to screen size and no indents".
-                        // This implies the *root* background.
-                        backgroundColor: theme === 'dark' ? 'rgba(17, 24, 39, 0.9)' : 'rgba(249, 250, 251, 0.9)'
+                        backgroundColor: slideshowMode
+                            ? (theme === 'dark' ? 'rgba(17, 24, 39, 1)' : 'rgba(0, 0, 0, 1)') // Force dark sidebar in slideshow mode
+                            : (theme === 'dark' ? 'rgba(17, 24, 39, 0.9)' : 'rgba(249, 250, 251, 0.9)')
                     }}
                 >
-                    <NewsFeed news={store.news} theme={theme} />
+                    {slideshowMode ? (
+                        <MainStage
+                            events={store.events}
+                            theme={theme}
+                            mode="sidebar"
+                            currentEventIndex={currentEventIndex}
+                        />
+                    ) : (
+                        <NewsFeed news={store.news} theme={theme} />
+                    )}
                 </div>
             </div>
         </div>
