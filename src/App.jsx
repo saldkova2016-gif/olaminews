@@ -5,36 +5,25 @@ import {
   Clock,
   CloudSun,
   Calendar,
-  Settings,
-  Plus,
-  Trash2,
+  Settings as SettingsIcon,
   AlertCircle,
   Image as ImageIcon,
-  Link as LinkIcon,
-  Maximize2,
-  X,
   LayoutTemplate,
   Cake,
   PartyPopper,
   Info,
   Loader2,
-  Edit2,
-  FileText,
-  Type,
-  Cloud,
-  CloudOff
+  X,
+  Maximize2,
+  Moon,
+  Sun,
+  ZoomIn
 } from 'lucide-react';
 
 const BRAND_COLOR = '#7652FF'; // Olami Purple
 
-const PRESET_TITLES = [
-  "Урок для юношей",
-  "Урок для девушек",
-  "Общее занятие",
-  "Шаббат"
-];
-
-const OLAMI_LOGO = "https://static.tildacdn.com/tild3664-6533-4037-b864-376432303439/Vector.svg";
+const OLAMI_LOGO_LIGHT = "https://static.tildacdn.com/tild3664-6533-4037-b864-376432303439/Vector.svg";
+const OLAMI_LOGO_DARK = "https://olami-moscow.umvert.dev/wp-content/uploads/2025/09/olami-logo-1.svg";
 
 // --- UTILS ---
 
@@ -56,7 +45,7 @@ const formatDate = (isoString) => {
 
 // --- COMPONENTS ---
 
-const ClockWidget = () => {
+const ClockWidget = ({ theme }) => {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -65,16 +54,16 @@ const ClockWidget = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-3 bg-gray-100 px-6 py-2 rounded-full">
-      <Clock className="w-6 h-6 text-gray-500" />
-      <span className="text-3xl font-bold font-mono text-gray-800" data-testid="clock-time">
+    <div className={`flex items-center gap-3 px-6 py-2 rounded-full ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}`}>
+      <Clock className={`w-6 h-6 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+      <span className={`text-3xl font-bold font-mono ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`} data-testid="clock-time">
         {time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
       </span>
     </div>
   );
 };
 
-const Header = ({ toggleAdmin }) => {
+const Header = ({ toggleSettings, theme }) => {
   const [weather, setWeather] = useState(null);
 
   useEffect(() => {
@@ -107,14 +96,18 @@ const Header = ({ toggleAdmin }) => {
     return "Шаббат: Пт, 18:42";
   };
 
+  const logoSrc = theme === 'dark' ? OLAMI_LOGO_DARK : OLAMI_LOGO_LIGHT;
+  const textColor = theme === 'dark' ? 'text-white' : 'text-gray-700';
+  const bgColor = theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200';
+
   return (
-    <header className="h-24 bg-white border-b border-gray-200 flex items-center justify-between px-10 shadow-sm z-50 relative">
+    <header className={`h-24 border-b flex items-center justify-between px-10 shadow-sm z-50 relative ${bgColor}`}>
       <div className="flex items-center gap-6">
-        <img src={OLAMI_LOGO} alt="Olami" className="h-16 w-auto object-contain" />
-        <div className="h-10 w-px bg-gray-300 mx-2"></div>
+        <img src={logoSrc} alt="Olami" className="h-16 w-auto object-contain" />
+        <div className="h-10 w-px bg-gray-300 mx-2 opacity-30"></div>
       </div>
 
-      <div className="flex items-center gap-10 text-gray-700">
+      <div className={`flex items-center gap-10 ${textColor}`}>
         <div className="flex items-center gap-3">
           <CloudSun className="w-8 h-8" style={{ color: BRAND_COLOR }} />
           <span className="text-2xl font-medium">
@@ -122,15 +115,15 @@ const Header = ({ toggleAdmin }) => {
           </span>
         </div>
 
-        <ClockWidget />
+        <ClockWidget theme={theme} />
 
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: BRAND_COLOR }}></div>
-          <span className="text-xl font-medium text-gray-800">{getShabbatTimer()}</span>
+          <span className={`text-xl font-medium ${textColor}`}>{getShabbatTimer()}</span>
         </div>
 
-        <button onClick={toggleAdmin} className="opacity-10 hover:opacity-100 transition-opacity p-2">
-          <Settings className="w-6 h-6" />
+        <button onClick={toggleSettings} className="opacity-30 hover:opacity-100 transition-opacity p-2">
+          <SettingsIcon className="w-6 h-6" />
         </button>
       </div>
     </header>
@@ -154,7 +147,7 @@ export const ProgressBar = ({ duration, color = BRAND_COLOR }) => {
   }, [duration]);
 
   return (
-    <div className="absolute bottom-0 left-0 h-3 bg-gray-800 w-full z-50">
+    <div className="absolute bottom-0 left-0 h-3 bg-black/20 w-full z-50">
         <div
           className="h-full transition-all duration-100 ease-linear"
           style={{
@@ -166,7 +159,7 @@ export const ProgressBar = ({ duration, color = BRAND_COLOR }) => {
   );
 };
 
-export const MainStage = ({ events }) => {
+export const MainStage = ({ events, theme }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -190,7 +183,7 @@ export const MainStage = ({ events }) => {
 
   if (events.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+      <div className={`w-full h-full flex items-center justify-center ${theme === 'dark' ? 'bg-gray-900 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
         <div className="text-center">
           <ImageIcon className="w-24 h-24 mx-auto mb-6 opacity-50" />
           <p className="text-3xl">Нет активных событий</p>
@@ -225,7 +218,7 @@ export const MainStage = ({ events }) => {
   }
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden flex">
+    <div className={`relative w-full h-full overflow-hidden flex ${theme === 'dark' ? 'bg-black' : 'bg-gray-900'}`}>
       {isLoading && (
         <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
           <Loader2 className="w-16 h-16 text-white animate-spin" />
@@ -250,17 +243,17 @@ export const MainStage = ({ events }) => {
          </div>
 
          <div className="flex-1 flex flex-col items-start pt-4">
-             <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-4">
+             <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
                 {event.title}
              </h2>
 
              {event.description && (
-               <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4" style={{ borderColor: BRAND_COLOR }}>
+               <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4 drop-shadow-md" style={{ borderColor: BRAND_COLOR }}>
                  {event.description}
                </p>
              )}
 
-             <div className="flex items-center gap-4 text-2xl text-gray-300 mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit">
+             <div className="flex items-center gap-4 text-2xl text-gray-300 mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit shadow-lg">
                  <Calendar className="w-8 h-8" />
                  <span>{formatDate(event.date)}</span>
              </div>
@@ -291,7 +284,7 @@ export const MainStage = ({ events }) => {
   );
 };
 
-const NewsFeed = ({ news }) => {
+const NewsFeed = ({ news, theme }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const ITEMS_PER_PAGE = 3;
 
@@ -321,25 +314,33 @@ const NewsFeed = ({ news }) => {
   };
 
   const getContainerStyles = (type) => {
+    const isDark = theme === 'dark';
+
     if (type === 'urgent') {
         return {
-            background: 'bg-red-50',
+            background: isDark ? 'bg-red-900/20' : 'bg-red-50',
             border: 'border-l-8 border-red-600',
-            shadow: 'shadow-md shadow-red-100'
+            shadow: isDark ? 'shadow-none' : 'shadow-md shadow-red-100',
+            text: isDark ? 'text-red-100' : 'text-gray-900'
         };
     }
-    const color = type === 'birthday' ? '#EC4899' : type === 'holiday' ? '#EAB308' : BRAND_COLOR;
+
+    const borderColor = type === 'birthday' ? '#EC4899' : type === 'holiday' ? '#EAB308' : BRAND_COLOR;
     return {
-        background: 'bg-white',
+        background: isDark ? 'bg-gray-800' : 'bg-white',
         border: '',
-        borderColor: color,
-        shadow: 'shadow-sm'
+        borderColor: borderColor,
+        shadow: 'shadow-sm',
+        text: isDark ? 'text-gray-200' : 'text-gray-700'
     };
   };
 
+  const containerBg = theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-200';
+  const headerBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+
   return (
-    <div className="h-full bg-gray-50 border-l border-gray-200 flex flex-col">
-      <div className="p-8 bg-white border-b border-gray-200 shadow-sm z-10 flex justify-between items-center">
+    <div className={`h-full border-l flex flex-col ${containerBg}`}>
+      <div className={`p-8 border-b shadow-sm z-10 flex justify-between items-center ${headerBg}`}>
         <h3
           className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"
           style={{ color: BRAND_COLOR }}
@@ -369,7 +370,7 @@ const NewsFeed = ({ news }) => {
                     {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
                 </div>
 
-                <p className={`text-2xl leading-normal ${item.type === 'urgent' ? 'font-bold text-gray-900' : 'text-gray-700'}`}>
+                <p className={`text-2xl leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''}`}>
                     {item.text}
                 </p>
                 </div>
@@ -381,386 +382,69 @@ const NewsFeed = ({ news }) => {
   );
 };
 
-const AdminPanel = ({ store, onClose }) => {
-  const { events, news, addEvent, updateEvent, deleteEvent, addNews, updateNews, deleteNews, isCloudEnabled } = store;
-  const [activeTab, setActiveTab] = useState('events');
-  const [editingId, setEditingId] = useState(null);
-
-  const [eventForm, setEventForm] = useState({
-    title: '', description: '', image: '', link: '', date: '', duration: 60
-  });
-
-  const [newsForm, setNewsForm] = useState({
-    text: '', type: 'normal'
-  });
-
-  const handleSaveEvent = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingId) {
-        await updateEvent(editingId, eventForm);
-        setEditingId(null);
-      } else {
-        await addEvent({
-          ...eventForm,
-          date: eventForm.date || new Date().toISOString()
-        });
-      }
-      setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
-    } catch (error) {
-      alert("Не удалось сохранить событие. Проверьте подключение или права доступа.");
-    }
-  };
-
-  const handleEditEvent = (event) => {
-    setEditingId(event.id);
-    const formattedDate = event.date ? new Date(event.date).toISOString().substring(0, 16) : '';
-    setEventForm({
-        title: event.title,
-        description: event.description || '',
-        image: event.image,
-        link: event.link,
-        date: formattedDate,
-        duration: event.duration
-    });
-  };
-
-  const handleSaveNews = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingId) {
-          await updateNews(editingId, newsForm);
-          setEditingId(null);
-      } else {
-          await addNews(newsForm);
-      }
-      setNewsForm({ text: '', type: 'normal' });
-    } catch (error) {
-      alert("Не удалось сохранить новость. Проверьте подключение или права доступа.");
-    }
-  };
-
-  const handleEditNews = (item) => {
-    setEditingId(item.id);
-    setNewsForm({ text: item.text, type: item.type });
-  };
-
-  const handleDeleteEvent = async (id) => {
-    try {
-      await deleteEvent(id);
-      if (editingId === id) {
-          setEditingId(null);
-          setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
-      }
-    } catch (error) {
-      alert("Не удалось удалить событие.");
-    }
-  };
-
-  const handleDeleteNews = async (id) => {
-    try {
-      await deleteNews(id);
-      if (editingId === id) {
-          setEditingId(null);
-          setNewsForm({ text: '', type: 'normal' });
-      }
-    } catch (error) {
-       alert("Не удалось удалить новость.");
-    }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    if (activeTab === 'events') {
-        setEventForm({ title: '', description: '', image: '', link: '', date: '', duration: 60 });
-    } else {
-        setNewsForm({ text: '', type: 'normal' });
-    }
-  };
-
-  const getNewsIcon = (type) => {
-    switch (type) {
-        case 'birthday': return <Cake className="w-5 h-5 text-pink-500" />;
-        case 'holiday': return <PartyPopper className="w-5 h-5 text-yellow-500" />;
-        case 'urgent': return <AlertCircle className="w-5 h-5 text-red-500" />;
-        default: return <Info className="w-5 h-5 text-blue-500" />;
-    }
-  };
-
+const SettingsPanel = ({ onClose, theme, setTheme, scale, setScale }) => {
   return (
-    <div className="fixed inset-0 bg-gray-100 z-[100] overflow-y-auto font-sans">
-      <div className="max-w-5xl mx-auto py-10 px-6">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">CMS Olami Dashboard</h1>
-            <div className="flex items-center gap-2 mt-1">
-                <p className="text-gray-500">Управление контентом экрана</p>
-                {isCloudEnabled ? (
-                    <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full border border-green-200">
-                        <Cloud className="w-3 h-3" /> Облако
-                    </span>
-                ) : (
-                    <span className="flex items-center gap-1 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full border border-gray-300">
-                        <CloudOff className="w-3 h-3" /> Локально
-                    </span>
-                )}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition"
-          >
-            <Maximize2 className="w-4 h-4" /> Вернуться на экран
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <SettingsIcon className="w-6 h-6 text-gray-500" />
+            Настройки экрана
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
+             <X className="w-6 h-6 text-gray-500" />
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden min-h-[600px]">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => { setActiveTab('events'); cancelEdit(); }}
-              className={`flex-1 py-4 text-center font-medium transition`}
-              style={{
-                color: activeTab === 'events' ? BRAND_COLOR : '#6B7280',
-                borderBottom: activeTab === 'events' ? `2px solid ${BRAND_COLOR}` : 'none',
-                backgroundColor: activeTab === 'events' ? `${BRAND_COLOR}10` : 'transparent'
-              }}
-            >
-              Афиши и Мероприятия
-            </button>
-            <button
-              onClick={() => { setActiveTab('news'); cancelEdit(); }}
-              className={`flex-1 py-4 text-center font-medium transition`}
-              style={{
-                color: activeTab === 'news' ? BRAND_COLOR : '#6B7280',
-                borderBottom: activeTab === 'news' ? `2px solid ${BRAND_COLOR}` : 'none',
-                backgroundColor: activeTab === 'news' ? `${BRAND_COLOR}10` : 'transparent'
-              }}
-            >
-              Новости Сообщества
-            </button>
-          </div>
-
-          <div className="p-8">
-            {activeTab === 'events' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Form */}
-                <div className="lg:col-span-1 bg-gray-50 p-6 rounded-xl h-fit border-2 border-transparent transition-all" style={{ borderColor: editingId ? BRAND_COLOR : 'transparent' }}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{color: BRAND_COLOR}}>
-                    {editingId ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                    {editingId ? 'Редактировать событие' : 'Добавить событие'}
-                  </h3>
-                  <form onSubmit={handleSaveEvent} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Название</label>
-                      <input
-                        required
-                        type="text"
-                        value={eventForm.title}
-                        onChange={e => setEventForm({...eventForm, title: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
-                        style={{ '--tw-ring-color': BRAND_COLOR }}
-                        placeholder="Например: Шаббат"
-                      />
-                      {/* Presets */}
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {PRESET_TITLES.map(preset => (
-                            <button
-                                key={preset}
-                                type="button"
-                                onClick={() => setEventForm({...eventForm, title: preset})}
-                                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-full transition"
-                            >
-                                {preset}
-                            </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Описание (опционально)</label>
-                      <textarea
-                        rows={2}
-                        value={eventForm.description}
-                        onChange={e => setEventForm({...eventForm, description: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none resize-none"
-                        style={{ '--tw-ring-color': BRAND_COLOR }}
-                        placeholder="Краткое описание события..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка на картинку (Квадрат)</label>
-                      <div className="flex gap-2">
-                        <ImageIcon className="w-5 h-5 text-gray-400 mt-2" />
-                        <input
-                          required
-                          type="url"
-                          value={eventForm.image}
-                          onChange={e => setEventForm({...eventForm, image: e.target.value})}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
-                          style={{ '--tw-ring-color': BRAND_COLOR }}
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ссылка для QR-кода</label>
-                      <div className="flex gap-2">
-                        <LinkIcon className="w-5 h-5 text-gray-400 mt-2" />
-                        <input
-                          required
-                          type="text"
-                          value={eventForm.link}
-                          onChange={e => setEventForm({...eventForm, link: e.target.value})}
-                          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
-                          style={{ '--tw-ring-color': BRAND_COLOR }}
-                          placeholder="olami.moscow/event"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Дата и время начала</label>
-                      <input
-                        required
-                        type="datetime-local"
-                        value={eventForm.date}
-                        onChange={e => setEventForm({...eventForm, date: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none"
-                        style={{ '--tw-ring-color': BRAND_COLOR }}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                        type="submit"
-                        className="flex-1 text-white font-bold py-3 rounded-lg transition shadow-md hover:opacity-90"
-                        style={{ backgroundColor: BRAND_COLOR }}
-                        >
-                        {editingId ? 'Сохранить' : 'Создать'}
-                        </button>
-                        {editingId && (
-                            <button
-                            type="button"
-                            onClick={cancelEdit}
-                            className="bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300"
-                            >
-                            <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
-                  </form>
-                </div>
-
-                {/* List */}
-                <div className="lg:col-span-2 space-y-4">
-                  {events.map(event => (
-                    <div
-                        key={event.id}
-                        onClick={() => handleEditEvent(event)}
-                        className={`flex gap-4 p-4 border rounded-xl bg-white shadow-sm items-center cursor-pointer hover:border-purple-300 transition ${editingId === event.id ? 'ring-2 ring-purple-500 border-transparent' : 'border-gray-200'}`}
+        <div className="p-8 space-y-8">
+            {/* Theme Toggle */}
+            <div>
+                <label className="block text-sm font-medium text-gray-500 mb-4 uppercase tracking-wider">Тема оформления</label>
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                    <button
+                        onClick={() => setTheme('light')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition font-medium ${theme === 'light' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                      <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
-                        <img src={event.image} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-gray-900">{event.title}</h4>
-                        {event.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{event.description}</p>}
-                        <div className="text-sm text-gray-500 flex items-center gap-4 mt-2">
-                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(event.date)}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                         <button onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition z-10">
-                           <Trash2 className="w-5 h-5" />
-                         </button>
-                      </div>
-                    </div>
-                  ))}
-                  {events.length === 0 && <div className="text-center py-10 text-gray-400">Список пуст</div>}
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                 {/* News Form */}
-                 <div className="lg:col-span-1 bg-gray-50 p-6 rounded-xl h-fit border-2 border-transparent transition-all" style={{ borderColor: editingId ? BRAND_COLOR : 'transparent' }}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{color: BRAND_COLOR}}>
-                    {editingId ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                    {editingId ? 'Редактировать новость' : 'Добавить новость'}
-                  </h3>
-                  <form onSubmit={handleSaveNews} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Текст новости</label>
-                      <textarea
-                        required
-                        maxLength={140}
-                        rows={4}
-                        value={newsForm.text}
-                        onChange={e => setNewsForm({...newsForm, text: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none resize-none"
-                        style={{ '--tw-ring-color': BRAND_COLOR }}
-                        placeholder="Максимум 140 символов"
-                      />
-                      <div className="text-right text-xs text-gray-400">{newsForm.text.length}/140</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Тип</label>
-                      <select
-                        value={newsForm.type}
-                        onChange={e => setNewsForm({...newsForm, type: e.target.value})}
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 outline-none bg-white"
-                        style={{ '--tw-ring-color': BRAND_COLOR }}
-                      >
-                        <option value="normal">Обычная (Информация)</option>
-                        <option value="urgent">Срочная (Важно)</option>
-                        <option value="birthday">День Рождения (Тортик)</option>
-                        <option value="holiday">Праздник (Конфетти)</option>
-                      </select>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                        type="submit"
-                        className="flex-1 text-white font-bold py-3 rounded-lg transition shadow-md hover:opacity-90"
-                        style={{ backgroundColor: BRAND_COLOR }}
-                        >
-                        {editingId ? 'Сохранить' : 'Опубликовать'}
-                        </button>
-                        {editingId && (
-                            <button
-                            type="button"
-                            onClick={cancelEdit}
-                            className="bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300"
-                            >
-                            <X className="w-5 h-5" />
-                            </button>
-                        )}
-                    </div>
-                  </form>
-                </div>
-
-                {/* News List */}
-                <div className="lg:col-span-2 space-y-3">
-                  {news.map(item => (
-                    <div
-                        key={item.id}
-                        onClick={() => handleEditNews(item)}
-                        className={`flex justify-between items-center p-4 rounded-xl border cursor-pointer hover:border-purple-300 transition ${editingId === item.id ? 'ring-2 ring-purple-500 border-transparent' : 'border-gray-200'} ${item.type === 'urgent' ? 'bg-red-50' : 'bg-white'}`}
+                        <Sun className="w-5 h-5" /> Светлая
+                    </button>
+                    <button
+                         onClick={() => setTheme('dark')}
+                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition font-medium ${theme === 'dark' ? 'bg-gray-800 shadow-sm text-white' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                      <div className="flex-1 pr-4">
-                         <div className="flex items-center gap-2 mb-1">
-                            {getNewsIcon(item.type)}
-                            {item.type === 'urgent' && <span className="text-xs font-bold text-red-600 uppercase">Срочно</span>}
-                            {item.type === 'birthday' && <span className="text-xs font-bold text-pink-600 uppercase">День Рождения</span>}
-                            {item.type === 'holiday' && <span className="text-xs font-bold text-yellow-600 uppercase">Праздник</span>}
-                         </div>
-                         <p className="text-gray-800">{item.text}</p>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteNews(item.id); }} className="text-gray-400 hover:text-red-500 p-2 z-10">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
+                        <Moon className="w-5 h-5" /> Темная
+                    </button>
                 </div>
-              </div>
-            )}
-          </div>
+            </div>
+
+            {/* Scale Slider */}
+            <div>
+                 <label className="block text-sm font-medium text-gray-500 mb-4 uppercase tracking-wider flex justify-between">
+                    <span>Масштаб интерфейса</span>
+                    <span className="text-gray-900 font-bold">{Math.round(scale * 100)}%</span>
+                 </label>
+                 <div className="flex items-center gap-4">
+                    <ZoomIn className="w-5 h-5 text-gray-400" />
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="1.5"
+                        step="0.1"
+                        value={scale}
+                        onChange={(e) => setScale(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#7652FF]"
+                    />
+                 </div>
+                 <p className="text-xs text-gray-400 mt-2">Регулируйте размер элементов для оптимального отображения на ТВ.</p>
+            </div>
+        </div>
+
+        <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
+             <button
+                onClick={onClose}
+                className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-gray-800 transition shadow-lg"
+             >
+                Применить настройки
+             </button>
         </div>
       </div>
     </div>
@@ -768,30 +452,61 @@ const AdminPanel = ({ store, onClose }) => {
 };
 
 export default function App() {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('olami_theme') || 'light');
+  const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('olami_scale')) || 1);
   const store = useStore();
 
+  useEffect(() => {
+    localStorage.setItem('olami_theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('olami_scale', scale);
+  }, [scale]);
+
   return (
-    <div className="h-screen w-screen bg-white font-sans overflow-hidden flex flex-col text-gray-900">
-      {isAdmin ? (
-        <AdminPanel store={store} onClose={() => setIsAdmin(false)} />
-      ) : (
-        <>
-          <div className="h-full w-full grid grid-rows-[96px_1fr] grid-cols-[3fr_1fr]">
-            <div className="col-span-2">
-              <Header toggleAdmin={() => setIsAdmin(true)} />
-            </div>
-
-            <div className="bg-black relative">
-              <MainStage events={store.events} />
-            </div>
-
-            <div className="bg-gray-50 h-full overflow-hidden">
-              <NewsFeed news={store.news} />
-            </div>
-          </div>
-        </>
+    <div
+        className="h-screen w-screen overflow-hidden flex flex-col font-sans transition-colors duration-300"
+        style={{
+            backgroundColor: theme === 'dark' ? '#000' : '#fff',
+            color: theme === 'dark' ? '#fff' : '#111'
+        }}
+    >
+      {/* Settings Modal */}
+      {showSettings && (
+        <SettingsPanel
+            onClose={() => setShowSettings(false)}
+            theme={theme}
+            setTheme={setTheme}
+            scale={scale}
+            setScale={setScale}
+        />
       )}
+
+      {/* Main App Scaler Wrapper */}
+      <div
+        className="w-full h-full flex flex-col origin-top-left transition-transform duration-200"
+        style={{
+            transform: `scale(${scale})`,
+            width: `${100 / scale}%`,
+            height: `${100 / scale}%`
+        }}
+      >
+        <div className="h-full w-full grid grid-rows-[96px_1fr] grid-cols-[3fr_1fr]">
+            <div className="col-span-2">
+              <Header toggleSettings={() => setShowSettings(true)} theme={theme} />
+            </div>
+
+            <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-black'}`}>
+              <MainStage events={store.events} theme={theme} />
+            </div>
+
+            <div className={`h-full overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+              <NewsFeed news={store.news} theme={theme} />
+            </div>
+        </div>
+      </div>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {
@@ -807,6 +522,9 @@ export default function App() {
         }
         .animate-fade-in {
             animation: fade-in 0.5s ease-out forwards;
+        }
+        input[type=range] {
+           accent-color: #7652FF;
         }
       `}</style>
     </div>

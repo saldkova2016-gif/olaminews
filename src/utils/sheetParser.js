@@ -109,7 +109,16 @@ export const parseNews = (csvText) => {
   return dataRows.map((row, index) => {
     // Columns: 0:Text, 1:Type
     const text = row[0];
-    const type = row[1] ? row[1].toLowerCase() : 'normal';
+    const rawType = row[1] ? row[1].trim().toLowerCase() : '';
+
+    let type = 'normal';
+    if (rawType.includes('день рождения')) {
+      type = 'birthday';
+    } else if (rawType.includes('мазаль тов')) {
+      type = 'holiday';
+    } else if (rawType.includes('важная новость')) {
+      type = 'urgent';
+    }
 
     if (!text) return null;
 

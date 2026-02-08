@@ -58,6 +58,11 @@ export const useStore = () => {
 
     initializeData();
 
+    // Auto-refresh interval (30 seconds)
+    const intervalId = setInterval(() => {
+        initializeData();
+    }, 30000);
+
     // Listen for storage events (Cross-tab sync)
     const handleStorageChange = (e) => {
       if (e.key === 'olami_events') {
@@ -69,7 +74,10 @@ export const useStore = () => {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+        clearInterval(intervalId);
+    };
   }, []);
 
   // Sync Local Logic (Backup sync)
