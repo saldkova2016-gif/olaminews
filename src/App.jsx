@@ -196,7 +196,12 @@ export const PhotoSlideshow = () => {
 
 export const BackgroundLayer = ({ theme, slideshowMode, events, currentEventIndex }) => {
     if (slideshowMode) {
-        return <PhotoSlideshow />;
+        return (
+            <div
+                className="w-full h-full transition-colors duration-300"
+                style={{ backgroundColor: theme === 'dark' ? '#000' : '#fff' }}
+            />
+        );
     }
 
     const event = events[currentEventIndex];
@@ -644,7 +649,7 @@ export default function App() {
             <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-cols-[3fr_1fr]">
 
                 {/* Left Column (Main) */}
-                <div className="relative w-full h-full flex flex-col">
+                <div className="relative w-full h-full flex flex-col overflow-hidden rounded-r-2xl">
                     {/* Standard Mode: MainStage (Transparent BG) */}
                     {!slideshowMode && (
                         <MainStage
@@ -658,8 +663,13 @@ export default function App() {
                     {/* Slideshow Mode: MainStage Overlay (Transparent BG) */}
                     {slideshowMode && (
                         <>
+                            {/* Photos contained in this column */}
+                            <div className="absolute inset-0 z-0">
+                                <PhotoSlideshow />
+                            </div>
+
                             {/* Spacer to push content down if needed, or just overlay at bottom */}
-                            <div className="flex-1"></div>
+                            <div className="flex-1 pointer-events-none"></div>
 
                             {/* Compact Afisha Overlay at Bottom */}
                             <div className="z-10">
