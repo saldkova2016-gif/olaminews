@@ -194,31 +194,38 @@ export const PhotoSlideshow = () => {
   );
 };
 
-export const MainStage = ({ events, theme, compact = false }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export const BackgroundLayer = ({ theme, slideshowMode, events, currentEventIndex }) => {
+    if (slideshowMode) {
+        return <PhotoSlideshow />;
+    }
+
+    const event = events[currentEventIndex];
+    if (event) {
+        return (
+            <div
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-110 transition-all duration-1000"
+                style={{ backgroundImage: `url(${event.image})` }}
+            ></div>
+        );
+    }
+
+    // Default solid background if no event or loading
+    return (
+        <div
+            className="w-full h-full transition-colors duration-300"
+            style={{ backgroundColor: theme === 'dark' ? '#000' : '#fff' }}
+        />
+    );
+};
+
+export const MainStage = ({ events, theme, compact = false, currentEventIndex }) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const INTERVAL_MS = 60000;
-
-  useEffect(() => {
-    if (events.length <= 1) return;
-
-    const slideTimer = setInterval(() => {
-      setIsLoading(true);
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % events.length);
-        setIsLoading(false);
-      }, 500);
-    }, INTERVAL_MS);
-
-    return () => {
-        clearInterval(slideTimer);
-    };
-  }, [events, currentIndex]);
+  const event = events[currentEventIndex];
 
   if (events.length === 0) {
     return (
-      <div className={`w-full h-full flex items-center justify-center ${theme === 'dark' ? 'bg-gray-900 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+      <div className={`w-full h-full flex items-center justify-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
         <div className="text-center">
           <ImageIcon className="w-24 h-24 mx-auto mb-6 opacity-50" />
           <p className="text-3xl">Нет активных событий</p>
@@ -227,7 +234,7 @@ export const MainStage = ({ events, theme, compact = false }) => {
     );
   }
 
-  const event = events[currentIndex];
+  if (!event) return null;
 
   // Status Logic
   const eventDate = new Date(event.date);
@@ -253,25 +260,12 @@ export const MainStage = ({ events, theme, compact = false }) => {
   }
 
   // Use explicit dark/light text logic. If not compact (standard mode), always use light text on dark bg.
-  const textColor = (!compact || theme === 'dark') ? 'text-white' : 'text-gray-900';
-  const dateColor = (!compact || theme === 'dark') ? 'text-gray-200' : 'text-gray-600';
+  // In compact mode (Slideshow), the background is always dark (bg-black/60), so text must be white even in Light Theme.
+  const textColor = (!compact || compact || theme === 'dark') ? 'text-white' : 'text-gray-900';
+  const dateColor = (!compact || compact || theme === 'dark') ? 'text-gray-200' : 'text-gray-600';
 
   return (
-    <div className={`relative w-full h-full overflow-hidden flex ${compact ? 'bg-transparent' : 'bg-black'}`}>
-      {isLoading && !compact && (
-        <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
-          <Loader2 className="w-16 h-16 text-white animate-spin" />
-        </div>
-      )}
-
-      {/* Background Blur - Hide in compact mode */}
-      {!compact && (
-        <div
-            className="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-110"
-            style={{ backgroundImage: `url(${event.image})` }}
-        ></div>
-      )}
-
+    <div className={`relative w-full h-full overflow-hidden flex bg-transparent`}>
       {compact ? (
         // Compact Overlay View
         <div className="w-full flex items-center gap-6 px-8 py-6 bg-black/60 backdrop-blur-xl border-t border-white/10 shadow-2xl">
@@ -344,15 +338,16 @@ export const MainStage = ({ events, theme, compact = false }) => {
       )}
 
       {events.length > 1 && !compact && (
-        <ProgressBar duration={INTERVAL_MS} key={currentIndex} />
+        <ProgressBar duration={60000} key={currentEventIndex} />
       )}
     </div>
   );
 };
 
-const NewsFeed = ({ news, theme }) => {
+const NewsFeed = ({ news, theme, compact = false }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const ITEMS_PER_PAGE = 3;
+  // Compact mode shows fewer items to fit height
+  const ITEMS_PER_PAGE = compact ? 2 : 3;
 
   useEffect(() => {
     if (news.length <= ITEMS_PER_PAGE) {
@@ -366,16 +361,17 @@ const NewsFeed = ({ news, theme }) => {
       });
     }, 60000);
     return () => clearInterval(interval);
-  }, [news.length]);
+  }, [news.length, ITEMS_PER_PAGE]);
 
   const visibleNews = news.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   const getIcon = (type) => {
+    const size = compact ? 'w-6 h-6' : 'w-8 h-8';
     switch (type) {
-      case 'birthday': return <Cake className="w-8 h-8 text-pink-500 flex-shrink-0" />;
-      case 'holiday': return <PartyPopper className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
-      case 'urgent': return <AlertCircle className="w-8 h-8 text-red-600 flex-shrink-0" />;
-      default: return <Info className="w-8 h-8 text-blue-500 flex-shrink-0" />;
+      case 'birthday': return <Cake className={`${size} text-pink-500 flex-shrink-0`} />;
+      case 'holiday': return <PartyPopper className={`${size} text-yellow-500 flex-shrink-0`} />;
+      case 'urgent': return <AlertCircle className={`${size} text-red-600 flex-shrink-0`} />;
+      default: return <Info className={`${size} text-blue-500 flex-shrink-0`} />;
     }
   };
 
@@ -401,17 +397,17 @@ const NewsFeed = ({ news, theme }) => {
     };
   };
 
-  const containerBg = theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-200';
+  const containerBg = 'bg-transparent';
   const headerBg = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
 
   return (
     <div className={`h-full border-l flex flex-col ${containerBg}`}>
-      <div className={`p-8 border-b shadow-sm z-10 flex justify-between items-center ${headerBg}`}>
+      <div className={`shadow-sm z-10 flex justify-between items-center ${headerBg} ${compact ? 'p-4' : 'p-8 border-b'}`}>
         <h3
-          className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"
+          className={`${compact ? 'text-lg' : 'text-2xl'} font-bold uppercase tracking-wider flex items-center gap-3`}
           style={{ color: BRAND_COLOR }}
         >
-          <LayoutTemplate className="w-7 h-7" />
+          <LayoutTemplate className={`${compact ? 'w-5 h-5' : 'w-7 h-7'}`} />
           Дайджест
         </h3>
         {news.length > ITEMS_PER_PAGE && (
@@ -420,23 +416,23 @@ const NewsFeed = ({ news, theme }) => {
       </div>
 
       <div className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 p-8 space-y-6">
+        <div className={`absolute inset-0 space-y-6 ${compact ? 'p-4 space-y-4' : 'p-8'}`}>
           {visibleNews.map((item) => {
              const styles = getContainerStyles(item.type);
              return (
                 <div
                 key={item.id}
-                className={`p-6 rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow}`}
+                className={`rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow} ${compact ? 'p-4' : 'p-6'}`}
                 style={item.type !== 'urgent' ? { borderLeftWidth: '8px', borderLeftColor: styles.borderColor } : {}}
                 >
-                <div className="flex items-center gap-3 mb-3">
+                <div className={`flex items-center gap-3 ${compact ? 'mb-2' : 'mb-3'}`}>
                     {getIcon(item.type)}
-                    {item.type === 'urgent' && <span className="text-lg font-extrabold uppercase tracking-wide text-red-600">ВАЖНО</span>}
+                    {item.type === 'urgent' && <span className={`${compact ? 'text-sm' : 'text-lg'} font-extrabold uppercase tracking-wide text-red-600`}>ВАЖНО</span>}
                     {item.type === 'birthday' && <span className="text-sm font-bold uppercase tracking-wide text-pink-600">День Рождения</span>}
                     {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
                 </div>
 
-                <p className={`text-2xl leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''}`}>
+                <p className={`leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''} ${compact ? 'text-lg line-clamp-3' : 'text-2xl'}`}>
                     {item.text}
                 </p>
                 </div>
@@ -544,6 +540,19 @@ export default function App() {
 
   const store = useStore();
 
+  // Lift MainStage slider state to App to sync BackgroundLayer
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const INTERVAL_MS = 60000;
+
+  useEffect(() => {
+    if (store.events.length <= 1) return;
+    const slideTimer = setInterval(() => {
+        setCurrentEventIndex((prev) => (prev + 1) % store.events.length);
+    }, INTERVAL_MS);
+    return () => clearInterval(slideTimer);
+  }, [store.events.length]);
+
+
   useEffect(() => {
     localStorage.setItem('olami_theme', theme);
   }, [theme]);
@@ -558,13 +567,23 @@ export default function App() {
 
   return (
     <div
-        className="h-screen w-screen overflow-hidden flex flex-col font-sans transition-colors duration-300"
-        style={{
-            backgroundColor: theme === 'dark' ? '#000' : '#fff',
-            color: theme === 'dark' ? '#fff' : '#111'
-        }}
+        className="h-screen w-screen overflow-hidden relative font-sans transition-colors duration-300 bg-black"
     >
-      {/* Settings Modal */}
+      {/*
+        LAYER 0: BACKGROUND (Unscaled)
+        This layer stays 100% viewport size regardless of scale setting.
+        It contains the visual "substrate" (Theme Color, Blur Image, or Slideshow).
+      */}
+      <div className="absolute inset-0 z-0">
+          <BackgroundLayer
+            theme={theme}
+            slideshowMode={slideshowMode}
+            events={store.events}
+            currentEventIndex={currentEventIndex}
+          />
+      </div>
+
+      {/* Settings Modal (Fixed on top, not scaled) */}
       {showSettings && (
         <SettingsPanel
             onClose={() => setShowSettings(false)}
@@ -577,48 +596,88 @@ export default function App() {
         />
       )}
 
-      {/* Main App Scaler Wrapper */}
+      {/*
+        LAYER 1: CONTENT (Scaled)
+        This contains the UI elements (Text, Cards, QR) which float *over* the background.
+        The wrapper itself compensates size so 100% inside matches visual viewport.
+      */}
       <div
-        className="w-full h-full flex flex-col origin-top-left transition-transform duration-200"
-        style={{
-            transform: `scale(${scale})`,
-            width: `${100 / scale}%`,
-            height: `${100 / scale}%`
-        }}
+        className="absolute inset-0 z-10 overflow-hidden"
       >
-        <div className="w-full">
-            <Header toggleSettings={() => setShowSettings(true)} theme={theme} />
-        </div>
-
-        {/* Content Grid: 2 Columns */}
-        <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-cols-[3fr_1fr]">
-
-            {/* Left Column (Main) */}
-            <div className="relative w-full h-full bg-black overflow-hidden flex flex-col">
-                {/* Standard Mode: Just MainStage */}
-                {!slideshowMode && (
-                    <MainStage events={store.events} theme={theme} compact={false} />
-                )}
-
-                {/* Slideshow Mode: Photos + Compact MainStage Overlay */}
-                {slideshowMode && (
-                    <>
-                        {/* Background Photos */}
-                        <div className="absolute inset-0 z-0">
-                            <PhotoSlideshow />
-                        </div>
-
-                        {/* Compact Afisha Overlay at Bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 z-10">
-                            <MainStage events={store.events} theme={theme} compact={true} />
-                        </div>
-                    </>
-                )}
+        <div
+            className="w-full h-full flex flex-col origin-top-left transition-transform duration-200"
+            style={{
+                transform: `scale(${scale})`,
+                width: `${100 / scale}%`,
+                height: `${100 / scale}%`
+            }}
+        >
+            <div className="w-full">
+                <Header toggleSettings={() => setShowSettings(true)} theme={theme} />
             </div>
 
-            {/* Right Column (News) */}
-            <div className={`h-full overflow-hidden border-l border-gray-200 ${theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-gray-50'}`}>
-                <NewsFeed news={store.news} theme={theme} />
+            {/* Content Grid: 2 Columns */}
+            <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-cols-[3fr_1fr]">
+
+                {/* Left Column (Main) */}
+                <div className="relative w-full h-full flex flex-col">
+                    {/* Standard Mode: MainStage (Transparent BG) */}
+                    {!slideshowMode && (
+                        <MainStage
+                            events={store.events}
+                            theme={theme}
+                            compact={false}
+                            currentEventIndex={currentEventIndex}
+                        />
+                    )}
+
+                    {/* Slideshow Mode: MainStage Overlay (Transparent BG) */}
+                    {slideshowMode && (
+                        <>
+                            {/* Spacer to push content down if needed, or just overlay at bottom */}
+                            <div className="flex-1"></div>
+
+                            {/* Compact Afisha Overlay at Bottom */}
+                            <div className="z-10">
+                                <MainStage
+                                    events={store.events}
+                                    theme={theme}
+                                    compact={true}
+                                    currentEventIndex={currentEventIndex}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Right Column (News) */}
+                <div
+                    className={`h-full overflow-hidden border-l ${theme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}
+                    style={{
+                        // Semi-transparent BG to let blur show through slightly, or solid if preferred?
+                        // User wants "substrate" fixed. If we make this transparent, the blur/slideshow shows through.
+                        // Standard Mode: We want solid theme color usually on the right?
+                        // Actually, traditionally News has a solid BG.
+                        // If we scale this container, and it has a BG, it shrinks.
+                        // So the BG *must* be on Layer 0 if we want it to extend to edge.
+                        // BUT News column divides the screen vertically. Layer 0 is full screen.
+                        // Compromise: Make NewsFeed background transparent and rely on Root BG?
+                        // If Root BG is solid (Standard Mode), that works.
+                        // If Root BG is Blur Image (Standard Mode left side), then NewsFeed needs to cover it?
+                        // Wait, Standard Mode: Left is Blur, Right is Solid Theme Color.
+                        // BackgroundLayer currently covers *entire* screen.
+                        // If BackgroundLayer shows the Event Image Blur, it covers the whole screen.
+                        // Then NewsFeed needs a solid background to sit on top of it.
+                        // AND that solid background must NOT shrink.
+                        // This implies the 2-column split must exist in the UN-SCALED layer too?
+                        // Or we accept that the NewsFeed BG scales?
+                        // User said: "dark background substrate under posters and photos... must scale automatically to screen size and no indents".
+                        // This implies the *root* background.
+                        backgroundColor: theme === 'dark' ? 'rgba(17, 24, 39, 0.9)' : 'rgba(249, 250, 251, 0.9)'
+                    }}
+                >
+                    <NewsFeed news={store.news} theme={theme} />
+                </div>
             </div>
         </div>
       </div>
