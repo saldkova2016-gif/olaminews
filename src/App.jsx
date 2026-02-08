@@ -563,7 +563,7 @@ const SettingsPanel = ({ onClose, theme, setTheme, scale, setScale, slideshowMod
 
 export default function App() {
   const [showSettings, setShowSettings] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('olami_theme') || 'light');
+  const [theme, setTheme] = useState(() => localStorage.getItem('olami_theme') || 'dark');
   const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('olami_scale')) || 1);
   const [slideshowMode, setSlideshowMode] = useState(() => localStorage.getItem('olami_slideshow_mode') === 'true');
 
