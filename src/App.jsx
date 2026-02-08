@@ -285,36 +285,36 @@ export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex 
   return (
     <div className={`relative w-full h-full overflow-hidden flex bg-transparent`}>
       {isCompact ? (
-        // Sidebar / Compact View
-        // Centered Vertical Layout for the Right Column
+        // Sidebar / Compact View (Slideshow Mode)
         // Order: Title -> Large Image -> Date -> Large QR
-        <div className="w-full h-full flex flex-col items-center justify-between p-6 py-8 animate-fade-in text-center overflow-y-auto scrollbar-hide">
+        // Reduced spacing (gap-2), centered content, object-contain for image visibility
+        <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-4 animate-fade-in text-center overflow-hidden">
              {/* 1. Title */}
-             <h2 className="text-3xl font-bold text-white leading-tight line-clamp-3 mb-4">
+             <h2 className="text-2xl font-bold text-white leading-tight line-clamp-2 flex-shrink-0">
                 {event.title}
              </h2>
 
-             {/* 2. Large Image */}
-             <div className="w-full aspect-[4/3] bg-white/10 rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative group mb-4 flex-shrink-0">
+             {/* 2. Large Image (Afisha) */}
+             <div className="w-full flex-1 min-h-0 bg-white/5 rounded-xl overflow-hidden border border-white/10 relative group flex items-center justify-center">
                 <img
                     src={event.image}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                 />
                 {statusBadge && <div className="absolute top-2 left-2 scale-75 origin-top-left">{statusBadge}</div>}
              </div>
 
              {/* 3. Date */}
-             <div className="flex items-center gap-2 text-xl text-gray-300 bg-white/10 px-6 py-3 rounded-xl mb-4 flex-shrink-0">
-                 <Calendar className="w-6 h-6 text-[#7652FF]" />
+             <div className="flex items-center gap-2 text-lg text-gray-300 bg-white/10 px-4 py-2 rounded-lg flex-shrink-0">
+                 <Calendar className="w-5 h-5 text-[#7652FF]" />
                  <span className="font-medium">{formatDate(event.date)}</span>
              </div>
 
              {/* 4. Large QR */}
-             <div className="bg-white p-4 rounded-3xl shadow-xl flex-shrink-0">
+             <div className="bg-white p-3 rounded-2xl shadow-xl flex-shrink-0">
                 <QRCodeSVG
                     value={getQRCodeValue(event.link)}
-                    size={220}
+                    size={180}
                     level="M"
                     includeMargin={false}
                 />
@@ -322,7 +322,7 @@ export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex 
         </div>
       ) : (
         // Standard Full View
-        <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start">
+        <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start overflow-hidden">
             <div className="h-full w-2/3 flex-shrink-0 relative">
                 <div className="relative w-full h-full">
                     <img
@@ -334,37 +334,44 @@ export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex 
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col items-start pt-4 overflow-hidden">
-                <h2 className={`text-5xl lg:text-7xl font-bold leading-tight mb-4 drop-shadow-lg ${textColor}`}>
+            <div className="flex-1 h-full flex flex-col items-start pt-2 overflow-hidden min-w-0">
+                {/* Title: Constrained lines */}
+                <h2 className={`text-4xl lg:text-6xl font-bold leading-tight mb-4 drop-shadow-lg line-clamp-3 ${textColor}`}>
                     {event.title}
                 </h2>
 
+                {/* Description: Scrollable or truncated if too long */}
                 {event.description && (
-                <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4 drop-shadow-md" style={{ borderColor: BRAND_COLOR }}>
-                    {event.description}
-                </p>
+                <div className="flex-1 min-h-0 overflow-hidden mb-6">
+                    <p className="text-lg lg:text-2xl text-gray-200 leading-relaxed opacity-90 font-light border-l-4 pl-4 drop-shadow-md line-clamp-[12]" style={{ borderColor: BRAND_COLOR }}>
+                        {event.description}
+                    </p>
+                </div>
                 )}
 
-                <div className={`flex items-center gap-4 text-2xl mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit shadow-lg ${dateColor}`}>
-                    <Calendar className="w-8 h-8" />
-                    <span>{formatDate(event.date)}</span>
-                </div>
-
-                <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
-                    <div className="relative w-[250px] h-[250px]">
-                        <QRCodeSVG
-                            value={getQRCodeValue(event.link)}
-                            size={250}
-                            level="M"
-                            includeMargin={true}
-                        />
+                {/* Date & QR Section (Fixed at bottom) */}
+                <div className="mt-auto flex flex-col gap-6 w-full items-start">
+                    <div className={`flex items-center gap-3 text-xl bg-white/10 px-5 py-2 rounded-xl backdrop-blur-md border border-white/20 w-fit shadow-lg ${dateColor}`}>
+                        <Calendar className="w-6 h-6" />
+                        <span>{formatDate(event.date)}</span>
                     </div>
-                    <p
-                        className="font-bold text-xl uppercase tracking-wide"
-                        style={{ color: BRAND_COLOR }}
-                    >
-                        Регистрация
-                    </p>
+
+                    <div className="bg-white p-4 rounded-3xl shadow-2xl flex flex-col items-center gap-2 self-start">
+                        <div className="relative">
+                            <QRCodeSVG
+                                value={getQRCodeValue(event.link)}
+                                size={200}
+                                level="M"
+                                includeMargin={true}
+                            />
+                        </div>
+                        <p
+                            className="font-bold text-lg uppercase tracking-wide"
+                            style={{ color: BRAND_COLOR }}
+                        >
+                            Регистрация
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
