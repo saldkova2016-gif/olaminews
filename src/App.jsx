@@ -221,7 +221,15 @@ export const BackgroundLayer = ({ theme, slideshowMode, events, currentEventInde
 export const MainStage = ({ events, theme, compact = false, currentEventIndex }) => {
   const [isLoading, setIsLoading] = useState(false);
 
+  // Use prop index to determine event
   const event = events[currentEventIndex];
+
+  useEffect(() => {
+      // Simulate loading state on index change if needed for transition effects
+      setIsLoading(true);
+      const timer = setTimeout(() => setIsLoading(false), 500);
+      return () => clearTimeout(timer);
+  }, [currentEventIndex]);
 
   if (events.length === 0) {
     return (
@@ -353,7 +361,7 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
         </div>
       )}
 
-      {events.length > 1 && !compact && (
+      {events.length > 1 && (
         <ProgressBar duration={60000} key={currentEventIndex} />
       )}
     </div>
