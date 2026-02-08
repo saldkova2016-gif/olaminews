@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from './hooks/useStore';
 import { QRCodeSVG } from 'qrcode.react';
+import { PHOTO_URLS } from './data/photos';
 import {
   Clock,
   CloudSun,
@@ -17,7 +18,8 @@ import {
   Maximize2,
   Moon,
   Sun,
-  ZoomIn
+  ZoomIn,
+  Presentation
 } from 'lucide-react';
 
 const BRAND_COLOR = '#7652FF'; // Olami Purple
@@ -159,7 +161,32 @@ export const ProgressBar = ({ duration, color = BRAND_COLOR }) => {
   );
 };
 
-export const MainStage = ({ events, theme }) => {
+export const PhotoSlideshow = () => {
+  const [index, setIndex] = useState(0);
+  const DURATION = 8000;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % PHOTO_URLS.length);
+    }, DURATION);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full bg-black overflow-hidden">
+        {PHOTO_URLS.map((url, i) => (
+            <div
+                key={i}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${i === index ? 'opacity-100' : 'opacity-0'}`}
+            >
+                <img src={url} alt="" className="w-full h-full object-cover" />
+            </div>
+        ))}
+    </div>
+  );
+};
+
+export const MainStage = ({ events, theme, compact = false }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -203,76 +230,87 @@ export const MainStage = ({ events, theme }) => {
   if (diffMinutes <= 60 && diffMinutes > 0) {
     statusBadge = (
       <div
-        className="absolute top-6 left-6 text-white px-6 py-3 rounded-xl shadow-xl animate-bounce z-20 border-2 border-white/20"
+        className={`absolute top-4 left-4 text-white rounded-lg shadow-lg z-20 animate-bounce ${compact ? 'px-3 py-1 text-sm' : 'px-6 py-3 text-2xl border-2 border-white/20'}`}
         style={{ backgroundColor: BRAND_COLOR }}
       >
-        <span className="text-2xl font-bold uppercase tracking-wider">Начало через {diffMinutes} мин</span>
+        <span className="font-bold uppercase tracking-wider">Начало через {diffMinutes} мин</span>
       </div>
     );
   } else if (diffMinutes <= 0 && diffMinutes > -event.duration) {
      statusBadge = (
-      <div className="absolute top-6 left-6 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-20">
-        <span className="text-2xl font-bold uppercase animate-pulse tracking-wider">ПРЯМО СЕЙЧАС</span>
+      <div className={`absolute top-4 left-4 bg-green-600 text-white rounded-lg shadow-lg z-20 ${compact ? 'px-3 py-1 text-sm' : 'px-6 py-3 text-2xl'}`}>
+        <span className="font-bold uppercase animate-pulse tracking-wider">ПРЯМО СЕЙЧАС</span>
       </div>
     );
   }
 
+  const containerBg = theme === 'dark' || !compact ? 'bg-black' : 'bg-white';
+  const textColor = theme === 'dark' || !compact ? 'text-white' : 'text-gray-900';
+
   return (
-    <div className={`relative w-full h-full overflow-hidden flex ${theme === 'dark' ? 'bg-black' : 'bg-gray-900'}`}>
+    <div className={`relative w-full h-full overflow-hidden flex ${containerBg}`}>
       {isLoading && (
         <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
           <Loader2 className="w-16 h-16 text-white animate-spin" />
         </div>
       )}
 
-      <div
-        className="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-110"
-        style={{ backgroundImage: `url(${event.image})` }}
-      ></div>
+      {/* Background Blur - Hide in compact mode */}
+      {!compact && (
+        <div
+            className="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-110"
+            style={{ backgroundImage: `url(${event.image})` }}
+        ></div>
+      )}
 
-      <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start">
-         <div className="h-full w-2/3 flex-shrink-0 relative">
+      <div className={`relative z-10 w-full h-full flex ${compact ? 'flex-row p-4 gap-4' : 'p-6 gap-8 items-start'}`}>
+         {/* Image Section */}
+         <div className={`${compact ? 'w-1/3' : 'w-2/3'} h-full flex-shrink-0 relative`}>
              <div className="relative w-full h-full">
                 <img
                 src={event.image}
                 alt={event.title}
-                className="w-full h-full object-contain object-left-top shadow-2xl rounded-2xl"
+                className={`w-full h-full object-contain ${compact ? 'object-center rounded-lg' : 'object-left-top shadow-2xl rounded-2xl'}`}
                 />
                 {statusBadge}
              </div>
          </div>
 
-         <div className="flex-1 flex flex-col items-start pt-4">
-             <h2 className="text-5xl lg:text-7xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
+         {/* Content Section */}
+         <div className="flex-1 flex flex-col items-start pt-2 overflow-hidden">
+             <h2 className={`${compact ? 'text-2xl font-bold mb-2 line-clamp-2' : 'text-5xl lg:text-7xl font-bold leading-tight mb-4 drop-shadow-lg'} ${textColor}`}>
                 {event.title}
              </h2>
 
-             {event.description && (
+             {!compact && event.description && (
                <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4 drop-shadow-md" style={{ borderColor: BRAND_COLOR }}>
                  {event.description}
                </p>
              )}
 
-             <div className="flex items-center gap-4 text-2xl text-gray-300 mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit shadow-lg">
-                 <Calendar className="w-8 h-8" />
+             <div className={`flex items-center gap-2 ${compact ? 'text-lg mb-4' : 'text-2xl mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20'} ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                 <Calendar className={`${compact ? 'w-5 h-5' : 'w-8 h-8'}`} />
                  <span>{formatDate(event.date)}</span>
              </div>
 
-             <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
-                <div className="relative w-[250px] h-[250px]">
+             {/* QR Code Section */}
+             <div className={`${compact ? 'mt-auto self-start' : 'bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4'}`}>
+                <div className={`relative ${compact ? 'w-[100px] h-[100px] bg-white p-2 rounded-lg' : 'w-[250px] h-[250px]'}`}>
                     <QRCodeSVG
                         value={getQRCodeValue(event.link)}
-                        size={250}
+                        size={compact ? 100 : 250}
                         level="M"
-                        includeMargin={true}
+                        includeMargin={!compact}
                     />
                 </div>
-                <p
-                    className="font-bold text-xl uppercase tracking-wide"
-                    style={{ color: BRAND_COLOR }}
-                >
-                    Регистрация
-                </p>
+                {!compact && (
+                    <p
+                        className="font-bold text-xl uppercase tracking-wide"
+                        style={{ color: BRAND_COLOR }}
+                    >
+                        Регистрация
+                    </p>
+                )}
              </div>
          </div>
       </div>
@@ -284,9 +322,10 @@ export const MainStage = ({ events, theme }) => {
   );
 };
 
-const NewsFeed = ({ news, theme }) => {
+const NewsFeed = ({ news, theme, compact = false }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  const ITEMS_PER_PAGE = 3;
+  // Compact mode shows fewer items to fit height
+  const ITEMS_PER_PAGE = compact ? 2 : 3;
 
   useEffect(() => {
     if (news.length <= ITEMS_PER_PAGE) {
@@ -300,16 +339,17 @@ const NewsFeed = ({ news, theme }) => {
       });
     }, 60000);
     return () => clearInterval(interval);
-  }, [news.length]);
+  }, [news.length, ITEMS_PER_PAGE]);
 
   const visibleNews = news.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   const getIcon = (type) => {
+    const size = compact ? 'w-6 h-6' : 'w-8 h-8';
     switch (type) {
-      case 'birthday': return <Cake className="w-8 h-8 text-pink-500 flex-shrink-0" />;
-      case 'holiday': return <PartyPopper className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
-      case 'urgent': return <AlertCircle className="w-8 h-8 text-red-600 flex-shrink-0" />;
-      default: return <Info className="w-8 h-8 text-blue-500 flex-shrink-0" />;
+      case 'birthday': return <Cake className={`${size} text-pink-500 flex-shrink-0`} />;
+      case 'holiday': return <PartyPopper className={`${size} text-yellow-500 flex-shrink-0`} />;
+      case 'urgent': return <AlertCircle className={`${size} text-red-600 flex-shrink-0`} />;
+      default: return <Info className={`${size} text-blue-500 flex-shrink-0`} />;
     }
   };
 
@@ -340,12 +380,12 @@ const NewsFeed = ({ news, theme }) => {
 
   return (
     <div className={`h-full border-l flex flex-col ${containerBg}`}>
-      <div className={`p-8 border-b shadow-sm z-10 flex justify-between items-center ${headerBg}`}>
+      <div className={`shadow-sm z-10 flex justify-between items-center ${headerBg} ${compact ? 'p-4' : 'p-8 border-b'}`}>
         <h3
-          className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"
+          className={`${compact ? 'text-lg' : 'text-2xl'} font-bold uppercase tracking-wider flex items-center gap-3`}
           style={{ color: BRAND_COLOR }}
         >
-          <LayoutTemplate className="w-7 h-7" />
+          <LayoutTemplate className={`${compact ? 'w-5 h-5' : 'w-7 h-7'}`} />
           Дайджест
         </h3>
         {news.length > ITEMS_PER_PAGE && (
@@ -354,23 +394,23 @@ const NewsFeed = ({ news, theme }) => {
       </div>
 
       <div className="flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 p-8 space-y-6">
+        <div className={`absolute inset-0 space-y-6 ${compact ? 'p-4 space-y-4' : 'p-8'}`}>
           {visibleNews.map((item) => {
              const styles = getContainerStyles(item.type);
              return (
                 <div
                 key={item.id}
-                className={`p-6 rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow}`}
+                className={`rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow} ${compact ? 'p-4' : 'p-6'}`}
                 style={item.type !== 'urgent' ? { borderLeftWidth: '8px', borderLeftColor: styles.borderColor } : {}}
                 >
-                <div className="flex items-center gap-3 mb-3">
+                <div className={`flex items-center gap-3 ${compact ? 'mb-2' : 'mb-3'}`}>
                     {getIcon(item.type)}
-                    {item.type === 'urgent' && <span className="text-lg font-extrabold uppercase tracking-wide text-red-600">ВАЖНО</span>}
+                    {item.type === 'urgent' && <span className={`${compact ? 'text-sm' : 'text-lg'} font-extrabold uppercase tracking-wide text-red-600`}>ВАЖНО</span>}
                     {item.type === 'birthday' && <span className="text-sm font-bold uppercase tracking-wide text-pink-600">День Рождения</span>}
                     {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
                 </div>
 
-                <p className={`text-2xl leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''}`}>
+                <p className={`leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''} ${compact ? 'text-lg line-clamp-3' : 'text-2xl'}`}>
                     {item.text}
                 </p>
                 </div>
@@ -382,7 +422,7 @@ const NewsFeed = ({ news, theme }) => {
   );
 };
 
-const SettingsPanel = ({ onClose, theme, setTheme, scale, setScale }) => {
+const SettingsPanel = ({ onClose, theme, setTheme, scale, setScale, slideshowMode, setSlideshowMode }) => {
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -412,6 +452,25 @@ const SettingsPanel = ({ onClose, theme, setTheme, scale, setScale }) => {
                          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition font-medium ${theme === 'dark' ? 'bg-gray-800 shadow-sm text-white' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         <Moon className="w-5 h-5" /> Темная
+                    </button>
+                </div>
+            </div>
+
+            {/* Slideshow Mode Toggle */}
+            <div>
+                <label className="block text-sm font-medium text-gray-500 mb-4 uppercase tracking-wider">Режим отображения</label>
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                    <button
+                        onClick={() => setSlideshowMode(false)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition font-medium ${!slideshowMode ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <LayoutTemplate className="w-5 h-5" /> Стандарт
+                    </button>
+                    <button
+                         onClick={() => setSlideshowMode(true)}
+                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg transition font-medium ${slideshowMode ? 'bg-gray-800 shadow-sm text-white' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        <Presentation className="w-5 h-5" /> Слайд-шоу
                     </button>
                 </div>
             </div>
@@ -455,6 +514,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('olami_theme') || 'light');
   const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('olami_scale')) || 1);
+  const [slideshowMode, setSlideshowMode] = useState(() => localStorage.getItem('olami_slideshow_mode') === 'true');
+
   const store = useStore();
 
   useEffect(() => {
@@ -464,6 +525,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('olami_scale', scale);
   }, [scale]);
+
+  useEffect(() => {
+    localStorage.setItem('olami_slideshow_mode', slideshowMode);
+  }, [slideshowMode]);
 
   return (
     <div
@@ -481,6 +546,8 @@ export default function App() {
             setTheme={setTheme}
             scale={scale}
             setScale={setScale}
+            slideshowMode={slideshowMode}
+            setSlideshowMode={setSlideshowMode}
         />
       )}
 
@@ -493,19 +560,39 @@ export default function App() {
             height: `${100 / scale}%`
         }}
       >
-        <div className="h-full w-full grid grid-rows-[96px_1fr] grid-cols-[3fr_1fr]">
-            <div className="col-span-2">
-              <Header toggleSettings={() => setShowSettings(true)} theme={theme} />
-            </div>
-
-            <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-black'}`}>
-              <MainStage events={store.events} theme={theme} />
-            </div>
-
-            <div className={`h-full overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-              <NewsFeed news={store.news} theme={theme} />
-            </div>
+        <div className="w-full">
+            <Header toggleSettings={() => setShowSettings(true)} theme={theme} />
         </div>
+
+        {slideshowMode ? (
+            /* Slideshow Layout */
+            <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-rows-[60%_40%]">
+                {/* Top: Photos */}
+                <div className="w-full h-full relative border-b border-gray-700">
+                    <PhotoSlideshow />
+                </div>
+                {/* Bottom: Split Content */}
+                <div className="w-full h-full grid grid-cols-2">
+                    <div className={`relative overflow-hidden border-r border-gray-700 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
+                        <MainStage events={store.events} theme={theme} compact={true} />
+                    </div>
+                    <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                        <NewsFeed news={store.news} theme={theme} compact={true} />
+                    </div>
+                </div>
+            </div>
+        ) : (
+            /* Standard Layout */
+            <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-cols-[3fr_1fr]">
+                <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-black'}`}>
+                    <MainStage events={store.events} theme={theme} />
+                </div>
+
+                <div className={`h-full overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                    <NewsFeed news={store.news} theme={theme} />
+                </div>
+            </div>
+        )}
       </div>
 
       <style>{`
