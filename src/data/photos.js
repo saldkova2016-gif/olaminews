@@ -1,22 +1,6 @@
 export const PHOTO_URLS = [
-  "https://sun9-18.userapi.com/s/v1/ig2/Or0C-PVCYqId9eb3My4M3hDlOllJ9UoiDaU9iXpBNtolmTPSRe8q0srfux81sTF7y15id44TBFXX0nb13Qg5hsbp.jpg",
-  "https://sun9-74.userapi.com/s/v1/ig2/EWJM-UoQJXZN_Ed85P2liIlLHtgKUxA0m4HsYwJ8oBRl9NWyuuNNb2uzkg6_6CyLNpdrolF_XwUpKTC-7PTPTyeO.jpg",
-  "https://sun9-17.userapi.com/s/v1/ig2/zgQbNm104DvkaauhUgJjLZh2lggSPNa-0PK-JVCCq2qh2UrZCQOzxDeO0daumshrLjK4LUUg7cHOyEJ_t5Uwbs3q.jpg",
-  "https://sun9-8.userapi.com/s/v1/ig2/H4wPbbzOn1JUlp9X3Rzq5yZI6aBXcn6hkJ688X6nECagkW9txsh8D2UaiwpZrXbe1hNXS871sUBis-_uLY-Z_F3c.jpg",
-  "https://sun9-5.userapi.com/s/v1/ig2/8M-vn7vkvtjLb-yDM2IJg8yYybKTzN2bn_BDyagQzWLqppIHc4du7S9ZWNjsKzumbJtkrkXI7fEh5pbNFjVs3tdP.jpg",
-  "https://sun9-62.userapi.com/s/v1/ig2/FGYgB8JkwrylcA2IzZAGhlwCzUg_dInRzl1YMLY_cadkSATIIVRAhm3Q6f8djfH2li3gzzysVWvqEiDHTtiJE4el.jpg",
-  "https://sun9-41.userapi.com/s/v1/ig2/Qikx_rlUPh66URo9_AaTPVGhC7dx1ZiWJAIQfecIrDWgwfwAXJlLlE3LBJ-JlTWlS3t--9QAFDJWddW1nAr_wSd4.jpg",
-  "https://sun9-13.userapi.com/s/v1/ig2/LpmfJ7fawATXJtnpOU75HK_nn91gv_1pPAR9GyEswEJ4rYshanFwIT63xHskZzxPZGk7A4V7beXfyTm-6WeoCQV2.jpg",
-  "https://sun9-10.userapi.com/s/v1/ig2/-4zxAJtuld3MKrIy5Db_UElMMzbvLFCzG3PR7CMyLrsULpGrFS4stjEDrNuX7gyT8bJUEb0UEunFZKKmB6ykGJos.jpg",
-  "https://sun9-69.userapi.com/s/v1/ig2/Du7EuGkpvL2AZCDFgjoRsksogyKfYuJuRk-4gibrR10i4mV7KFyIoDyLMQ8fcUWpP5kEaKWKFo3YX5PoOXJUIvC4.jpg",
-  "https://sun9-42.userapi.com/s/v1/ig2/ctjsG3u-9YBcejPPs57WERBuIVlUkFsZFP-kFtONcxhsJuiWFgzsWyW0VTf03kuYy43i5JbUhCuDC24wp5Y5Iya2.jpg",
-  "https://sun9-67.userapi.com/s/v1/ig2/kNBfhCfEnHf0Wbovs5cdOKxwtIsNy9tXNIBXQlDNlUEJM6cerC_F9y1KsePZASuLUuPh4nIIHY8lbpxoSY4yFkr8.jpg",
-  "https://sun9-60.userapi.com/s/v1/ig2/IZgpR8vR4HI2g6GaI0apM6KNU3I8G-vKfL1qFgThsuqW-tD0gRbD81lhx4HrPjQJa1j86FXIwqCq7VQeNI0KmPlw.jpg",
-  "https://sun9-81.userapi.com/s/v1/ig2/AfSCjPVVlie6fmmN6gvFQtBqhojT7LC0Qgwm3hSadRk0aTlgaSJWGFRrS-spWHoUKCZxE8eHw_ba97Zdn9rGBSzd.jpg",
-  "https://sun9-75.userapi.com/s/v1/ig2/6DNCFOl46rOzqoWdB-yn4nXvhrwBJkF_R47uEUw90YN1qxur9akcjQVEFjKV-jy3XxtzJbexHVaZm5cFX965aPOa.jpg",
-  "https://sun9-73.userapi.com/s/v1/ig2/WMBWuj1pFU_m4m6AcZKjfdJvQD-x2hvOLD53SJ5Cxs1Q6NN-501hIocbkYG4BZpCPmu1bR6Q4afaPT95CwGA-JbC.jpg",
-  "https://sun9-25.userapi.com/s/v1/ig2/pscsv3XHg4SQAh74G8DYuWK_Ej_Ttk0f86_lRSNgfuVsaahH2MhSzf_2WmVd_TaViSX3K6_4bc2nLMFJyJU8ppqr.jpg",
-  "https://sun9-8.userapi.com/s/v1/ig2/txgC5DL4TnGaLj2xadEIlRO6WjunDD-ZWx9pyK34tPcP9AlzQJ1mrjvplWO1n2vRoc_JShqq9PiwDtflYNfbulzU.jpg",
-  "https://sun9-39.userapi.com/s/v1/ig2/DbZfvdG0Zo2NhYWVCtAuXT78cgtUk9P5QpGUOcVlMC9szIjMh3cB3sjdCCtazw6w_G6x8oqtMQfgXJy8qErtU_uS.jpg",
-  "https://sun9-65.userapi.com/s/v1/ig2/jKL81CybvcuQ-llsR5JDfuVBav08fTsrsQRLqj7yKYiMABMbtgvZNXyqRM2hcovrgj1olNGXz0AORgYn_B8BksRz.jpg"
+  "https://sun9-17.userapi.com/s/v1/ig2/zgQbNm104DvkaauhUgJjLZh2lggSPNa-0PK-JVCCq2qh2UrZCQOzxDeO0daumshrLjK4LUUg7cHOyEJ_t5Uwbs3q.jpg?quality=95&as=32x21,48x32,72x48,108x72,160x107,240x160,360x240,480x320,540x360,640x427,720x480,1080x720,1280x853,1440x960,2560x1707&from=bu&cs=2560x0",
+  "https://sun9-73.userapi.com/s/v1/ig2/WMBWuj1pFU_m4m6AcZKjfdJvQD-x2hvOLD53SJ5Cxs1Q6NN-501hIocbkYG4BZpCPmu1bR6Q4afaPT95CwGA-JbC.jpg?quality=95&as=32x21,48x32,72x48,108x72,160x107,240x160,360x240,480x320,540x360,640x427,720x480,1080x720,1280x853,1440x960,2560x1707&from=bu&cs=2560x0",
+  "https://sun9-1.userapi.com/s/v1/ig2/CANrJjnA1QC2-ivA3svw_xScCGo9zvK2I6eUtMpLq32aZgG7M5YP-rH5NdspcpJjvFJEY0_3rug5fHAGAGNOc_Xh.jpg?quality=95&as=32x21,48x32,72x48,108x72,160x107,240x160,360x240,480x320,540x360,640x427,720x480,1080x720,1280x853,1440x960,2560x1707&from=bu&cs=2560x0",
+  "https://sun9-78.userapi.com/s/v1/ig2/kObgnZTRREU-m2Q4-xAPAdWxhP0MfmGjUW6n7TFQOPD7xhhL1c6bb3KvTOkjMZVFAEi8QLyAaGqpHNAkkBABs3VU.jpg?quality=95&as=32x21,48x32,72x48,108x72,160x107,240x160,360x240,480x320,540x360,640x427,720x480,1080x720,1280x853,1440x960,2560x1707&from=bu&cs=2560x0"
 ];
