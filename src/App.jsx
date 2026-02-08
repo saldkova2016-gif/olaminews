@@ -173,13 +173,21 @@ export const PhotoSlideshow = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-black overflow-hidden">
+    <div className="absolute inset-0 w-full h-full bg-black overflow-hidden">
         {PHOTO_URLS.map((url, i) => (
             <div
                 key={i}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${i === index ? 'opacity-100' : 'opacity-0'}`}
             >
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <div
+                    className={`w-full h-full transition-transform duration-[10000ms] ease-linear ${i === index ? 'scale-110' : 'scale-100'}`}
+                    style={{
+                        backgroundImage: `url(${url})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                    }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
             </div>
         ))}
     </div>
@@ -244,12 +252,13 @@ export const MainStage = ({ events, theme, compact = false }) => {
     );
   }
 
-  const containerBg = theme === 'dark' || !compact ? 'bg-black' : 'bg-white';
-  const textColor = theme === 'dark' || !compact ? 'text-white' : 'text-gray-900';
+  // Use explicit dark/light text logic. If not compact (standard mode), always use light text on dark bg.
+  const textColor = (!compact || theme === 'dark') ? 'text-white' : 'text-gray-900';
+  const dateColor = (!compact || theme === 'dark') ? 'text-gray-200' : 'text-gray-600';
 
   return (
-    <div className={`relative w-full h-full overflow-hidden flex ${containerBg}`}>
-      {isLoading && (
+    <div className={`relative w-full h-full overflow-hidden flex ${compact ? 'bg-transparent' : 'bg-black'}`}>
+      {isLoading && !compact && (
         <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
           <Loader2 className="w-16 h-16 text-white animate-spin" />
         </div>
@@ -263,69 +272,87 @@ export const MainStage = ({ events, theme, compact = false }) => {
         ></div>
       )}
 
-      <div className={`relative z-10 w-full h-full flex ${compact ? 'flex-row p-4 gap-4' : 'p-6 gap-8 items-start'}`}>
-         {/* Image Section */}
-         <div className={`${compact ? 'w-1/3' : 'w-2/3'} h-full flex-shrink-0 relative`}>
-             <div className="relative w-full h-full">
-                <img
-                src={event.image}
-                alt={event.title}
-                className={`w-full h-full object-contain ${compact ? 'object-center rounded-lg' : 'object-left-top shadow-2xl rounded-2xl'}`}
+      {compact ? (
+        // Compact Overlay View
+        <div className="w-full flex items-center gap-6 px-8 py-6 bg-black/60 backdrop-blur-xl border-t border-white/10 shadow-2xl">
+             <div className="flex-1 min-w-0">
+                 <h2 className="text-3xl font-bold text-white mb-2 truncate">
+                    {event.title}
+                 </h2>
+                 <div className="flex items-center gap-2 text-xl text-gray-300">
+                     <Calendar className="w-5 h-5 text-[#7652FF]" />
+                     <span>{formatDate(event.date)}</span>
+                 </div>
+             </div>
+             <div className="bg-white p-2 rounded-lg flex-shrink-0">
+                <QRCodeSVG
+                    value={getQRCodeValue(event.link)}
+                    size={80}
+                    level="M"
+                    includeMargin={false}
                 />
-                {statusBadge}
              </div>
-         </div>
-
-         {/* Content Section */}
-         <div className="flex-1 flex flex-col items-start pt-2 overflow-hidden">
-             <h2 className={`${compact ? 'text-2xl font-bold mb-2 line-clamp-2' : 'text-5xl lg:text-7xl font-bold leading-tight mb-4 drop-shadow-lg'} ${textColor}`}>
-                {event.title}
-             </h2>
-
-             {!compact && event.description && (
-               <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4 drop-shadow-md" style={{ borderColor: BRAND_COLOR }}>
-                 {event.description}
-               </p>
-             )}
-
-             <div className={`flex items-center gap-2 ${compact ? 'text-lg mb-4' : 'text-2xl mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20'} ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                 <Calendar className={`${compact ? 'w-5 h-5' : 'w-8 h-8'}`} />
-                 <span>{formatDate(event.date)}</span>
-             </div>
-
-             {/* QR Code Section */}
-             <div className={`${compact ? 'mt-auto self-start' : 'bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4'}`}>
-                <div className={`relative ${compact ? 'w-[100px] h-[100px] bg-white p-2 rounded-lg' : 'w-[250px] h-[250px]'}`}>
-                    <QRCodeSVG
-                        value={getQRCodeValue(event.link)}
-                        size={compact ? 100 : 250}
-                        level="M"
-                        includeMargin={!compact}
+        </div>
+      ) : (
+        // Standard Full View
+        <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start">
+            <div className="h-full w-2/3 flex-shrink-0 relative">
+                <div className="relative w-full h-full">
+                    <img
+                    src={event.image}
+                    alt={event.title}
+                    className="w-full h-full object-contain object-left-top shadow-2xl rounded-2xl"
                     />
+                    {statusBadge}
                 </div>
-                {!compact && (
+            </div>
+
+            <div className="flex-1 flex flex-col items-start pt-4 overflow-hidden">
+                <h2 className={`text-5xl lg:text-7xl font-bold leading-tight mb-4 drop-shadow-lg ${textColor}`}>
+                    {event.title}
+                </h2>
+
+                {event.description && (
+                <p className="text-xl lg:text-3xl text-gray-200 mb-8 leading-relaxed opacity-90 font-light border-l-4 pl-4 drop-shadow-md" style={{ borderColor: BRAND_COLOR }}>
+                    {event.description}
+                </p>
+                )}
+
+                <div className={`flex items-center gap-4 text-2xl mb-10 bg-white/10 px-6 py-3 rounded-xl backdrop-blur-md border border-white/20 w-fit shadow-lg ${dateColor}`}>
+                    <Calendar className="w-8 h-8" />
+                    <span>{formatDate(event.date)}</span>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4">
+                    <div className="relative w-[250px] h-[250px]">
+                        <QRCodeSVG
+                            value={getQRCodeValue(event.link)}
+                            size={250}
+                            level="M"
+                            includeMargin={true}
+                        />
+                    </div>
                     <p
                         className="font-bold text-xl uppercase tracking-wide"
                         style={{ color: BRAND_COLOR }}
                     >
                         Регистрация
                     </p>
-                )}
-             </div>
-         </div>
-      </div>
+                </div>
+            </div>
+        </div>
+      )}
 
-      {events.length > 1 && (
+      {events.length > 1 && !compact && (
         <ProgressBar duration={INTERVAL_MS} key={currentIndex} />
       )}
     </div>
   );
 };
 
-const NewsFeed = ({ news, theme, compact = false }) => {
+const NewsFeed = ({ news, theme }) => {
   const [currentPage, setCurrentPage] = useState(0);
-  // Compact mode shows fewer items to fit height
-  const ITEMS_PER_PAGE = compact ? 2 : 3;
+  const ITEMS_PER_PAGE = 3;
 
   useEffect(() => {
     if (news.length <= ITEMS_PER_PAGE) {
@@ -339,17 +366,16 @@ const NewsFeed = ({ news, theme, compact = false }) => {
       });
     }, 60000);
     return () => clearInterval(interval);
-  }, [news.length, ITEMS_PER_PAGE]);
+  }, [news.length]);
 
   const visibleNews = news.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   const getIcon = (type) => {
-    const size = compact ? 'w-6 h-6' : 'w-8 h-8';
     switch (type) {
-      case 'birthday': return <Cake className={`${size} text-pink-500 flex-shrink-0`} />;
-      case 'holiday': return <PartyPopper className={`${size} text-yellow-500 flex-shrink-0`} />;
-      case 'urgent': return <AlertCircle className={`${size} text-red-600 flex-shrink-0`} />;
-      default: return <Info className={`${size} text-blue-500 flex-shrink-0`} />;
+      case 'birthday': return <Cake className="w-8 h-8 text-pink-500 flex-shrink-0" />;
+      case 'holiday': return <PartyPopper className="w-8 h-8 text-yellow-500 flex-shrink-0" />;
+      case 'urgent': return <AlertCircle className="w-8 h-8 text-red-600 flex-shrink-0" />;
+      default: return <Info className="w-8 h-8 text-blue-500 flex-shrink-0" />;
     }
   };
 
@@ -380,12 +406,12 @@ const NewsFeed = ({ news, theme, compact = false }) => {
 
   return (
     <div className={`h-full border-l flex flex-col ${containerBg}`}>
-      <div className={`shadow-sm z-10 flex justify-between items-center ${headerBg} ${compact ? 'p-4' : 'p-8 border-b'}`}>
+      <div className={`p-8 border-b shadow-sm z-10 flex justify-between items-center ${headerBg}`}>
         <h3
-          className={`${compact ? 'text-lg' : 'text-2xl'} font-bold uppercase tracking-wider flex items-center gap-3`}
+          className="text-2xl font-bold uppercase tracking-wider flex items-center gap-3"
           style={{ color: BRAND_COLOR }}
         >
-          <LayoutTemplate className={`${compact ? 'w-5 h-5' : 'w-7 h-7'}`} />
+          <LayoutTemplate className="w-7 h-7" />
           Дайджест
         </h3>
         {news.length > ITEMS_PER_PAGE && (
@@ -394,23 +420,23 @@ const NewsFeed = ({ news, theme, compact = false }) => {
       </div>
 
       <div className="flex-1 overflow-hidden relative">
-        <div className={`absolute inset-0 space-y-6 ${compact ? 'p-4 space-y-4' : 'p-8'}`}>
+        <div className="absolute inset-0 p-8 space-y-6">
           {visibleNews.map((item) => {
              const styles = getContainerStyles(item.type);
              return (
                 <div
                 key={item.id}
-                className={`rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow} ${compact ? 'p-4' : 'p-6'}`}
+                className={`p-6 rounded-2xl border transition-all hover:shadow-lg animate-fade-in ${styles.background} ${styles.border} ${styles.shadow}`}
                 style={item.type !== 'urgent' ? { borderLeftWidth: '8px', borderLeftColor: styles.borderColor } : {}}
                 >
-                <div className={`flex items-center gap-3 ${compact ? 'mb-2' : 'mb-3'}`}>
+                <div className="flex items-center gap-3 mb-3">
                     {getIcon(item.type)}
-                    {item.type === 'urgent' && <span className={`${compact ? 'text-sm' : 'text-lg'} font-extrabold uppercase tracking-wide text-red-600`}>ВАЖНО</span>}
+                    {item.type === 'urgent' && <span className="text-lg font-extrabold uppercase tracking-wide text-red-600">ВАЖНО</span>}
                     {item.type === 'birthday' && <span className="text-sm font-bold uppercase tracking-wide text-pink-600">День Рождения</span>}
                     {item.type === 'holiday' && <span className="text-sm font-bold uppercase tracking-wide text-yellow-600">Праздник</span>}
                 </div>
 
-                <p className={`leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''} ${compact ? 'text-lg line-clamp-3' : 'text-2xl'}`}>
+                <p className={`text-2xl leading-normal ${styles.text} ${item.type === 'urgent' ? 'font-bold' : ''}`}>
                     {item.text}
                 </p>
                 </div>
@@ -564,35 +590,37 @@ export default function App() {
             <Header toggleSettings={() => setShowSettings(true)} theme={theme} />
         </div>
 
-        {slideshowMode ? (
-            /* Slideshow Layout */
-            <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-rows-[60%_40%]">
-                {/* Top: Photos */}
-                <div className="w-full h-full relative border-b border-gray-700">
-                    <PhotoSlideshow />
-                </div>
-                {/* Bottom: Split Content */}
-                <div className="w-full h-full grid grid-cols-2">
-                    <div className={`relative overflow-hidden border-r border-gray-700 ${theme === 'dark' ? 'bg-black' : 'bg-white'}`}>
-                        <MainStage events={store.events} theme={theme} compact={true} />
-                    </div>
-                    <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                        <NewsFeed news={store.news} theme={theme} compact={true} />
-                    </div>
-                </div>
-            </div>
-        ) : (
-            /* Standard Layout */
-            <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-cols-[3fr_1fr]">
-                <div className={`relative overflow-hidden ${theme === 'dark' ? 'bg-black' : 'bg-black'}`}>
-                    <MainStage events={store.events} theme={theme} />
-                </div>
+        {/* Content Grid: 2 Columns */}
+        <div className="flex-1 w-full h-[calc(100%-96px)] grid grid-cols-[3fr_1fr]">
 
-                <div className={`h-full overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                    <NewsFeed news={store.news} theme={theme} />
-                </div>
+            {/* Left Column (Main) */}
+            <div className="relative w-full h-full bg-black overflow-hidden flex flex-col">
+                {/* Standard Mode: Just MainStage */}
+                {!slideshowMode && (
+                    <MainStage events={store.events} theme={theme} compact={false} />
+                )}
+
+                {/* Slideshow Mode: Photos + Compact MainStage Overlay */}
+                {slideshowMode && (
+                    <>
+                        {/* Background Photos */}
+                        <div className="absolute inset-0 z-0">
+                            <PhotoSlideshow />
+                        </div>
+
+                        {/* Compact Afisha Overlay at Bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 z-10">
+                            <MainStage events={store.events} theme={theme} compact={true} />
+                        </div>
+                    </>
+                )}
             </div>
-        )}
+
+            {/* Right Column (News) */}
+            <div className={`h-full overflow-hidden border-l border-gray-200 ${theme === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-gray-50'}`}>
+                <NewsFeed news={store.news} theme={theme} />
+            </div>
+        </div>
       </div>
 
       <style>{`
