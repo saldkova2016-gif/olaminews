@@ -269,6 +269,15 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
       {compact ? (
         // Compact Overlay View
         <div className="w-full flex items-center gap-6 px-8 py-6 bg-black/60 backdrop-blur-xl border-t border-white/10 shadow-2xl">
+             {/* Thumbnail */}
+             <div className="w-24 h-24 flex-shrink-0 bg-white/10 rounded-lg overflow-hidden border border-white/20">
+                <img
+                    src={event.image}
+                    alt=""
+                    className="w-full h-full object-cover"
+                />
+             </div>
+
              <div className="flex-1 min-w-0">
                  <h2 className="text-3xl font-bold text-white mb-2 truncate">
                     {event.title}
@@ -278,13 +287,20 @@ export const MainStage = ({ events, theme, compact = false, currentEventIndex })
                      <span>{formatDate(event.date)}</span>
                  </div>
              </div>
-             <div className="bg-white p-2 rounded-lg flex-shrink-0">
-                <QRCodeSVG
-                    value={getQRCodeValue(event.link)}
-                    size={80}
-                    level="M"
-                    includeMargin={false}
-                />
+
+             {/* Registration & QR */}
+             <div className="flex items-center gap-4 border-l border-white/20 pl-6">
+                 <p className="text-white font-bold uppercase text-right leading-tight max-w-[150px]">
+                     Регистрация на мероприятие
+                 </p>
+                 <div className="bg-white p-2 rounded-lg flex-shrink-0">
+                    <QRCodeSVG
+                        value={getQRCodeValue(event.link)}
+                        size={80}
+                        level="M"
+                        includeMargin={false}
+                    />
+                 </div>
              </div>
         </div>
       ) : (
