@@ -287,9 +287,15 @@ export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex 
       {isCompact ? (
         // Sidebar / Compact View
         // Centered Vertical Layout for the Right Column
-        <div className="w-full h-full flex flex-col items-center justify-center p-8 gap-6 animate-fade-in text-center">
-             {/* Thumbnail */}
-             <div className="w-64 h-64 bg-white/10 rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative group">
+        // Order: Title -> Large Image -> Date -> Large QR
+        <div className="w-full h-full flex flex-col items-center justify-between p-6 py-8 animate-fade-in text-center overflow-y-auto scrollbar-hide">
+             {/* 1. Title */}
+             <h2 className="text-3xl font-bold text-white leading-tight line-clamp-3 mb-4">
+                {event.title}
+             </h2>
+
+             {/* 2. Large Image */}
+             <div className="w-full aspect-[4/3] bg-white/10 rounded-2xl overflow-hidden border border-white/20 shadow-2xl relative group mb-4 flex-shrink-0">
                 <img
                     src={event.image}
                     alt=""
@@ -298,29 +304,20 @@ export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex 
                 {statusBadge && <div className="absolute top-2 left-2 scale-75 origin-top-left">{statusBadge}</div>}
              </div>
 
-             <div className="flex flex-col items-center gap-2">
-                 <h2 className="text-3xl font-bold text-white leading-tight line-clamp-3">
-                    {event.title}
-                 </h2>
-                 <div className="flex items-center gap-2 text-xl text-gray-300 bg-white/10 px-4 py-2 rounded-lg">
-                     <Calendar className="w-5 h-5 text-[#7652FF]" />
-                     <span>{formatDate(event.date)}</span>
-                 </div>
+             {/* 3. Date */}
+             <div className="flex items-center gap-2 text-xl text-gray-300 bg-white/10 px-6 py-3 rounded-xl mb-4 flex-shrink-0">
+                 <Calendar className="w-6 h-6 text-[#7652FF]" />
+                 <span className="font-medium">{formatDate(event.date)}</span>
              </div>
 
-             {/* Registration & QR */}
-             <div className="flex flex-col items-center gap-3 mt-4 bg-white/5 p-4 rounded-2xl border border-white/10 w-full max-w-xs">
-                 <p className="text-white/80 font-bold uppercase text-sm tracking-widest">
-                     Регистрация
-                 </p>
-                 <div className="bg-white p-2 rounded-xl">
-                    <QRCodeSVG
-                        value={getQRCodeValue(event.link)}
-                        size={180}
-                        level="M"
-                        includeMargin={false}
-                    />
-                 </div>
+             {/* 4. Large QR */}
+             <div className="bg-white p-4 rounded-3xl shadow-xl flex-shrink-0">
+                <QRCodeSVG
+                    value={getQRCodeValue(event.link)}
+                    size={220}
+                    level="M"
+                    includeMargin={false}
+                />
              </div>
         </div>
       ) : (

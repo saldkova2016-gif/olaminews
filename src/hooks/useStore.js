@@ -1,56 +1,39 @@
 import { useState, useEffect } from 'react';
-import { parseEvents, parseNews } from '../utils/sheetParser';
-
-const INITIAL_EVENTS = [];
-const INITIAL_NEWS = [];
+import { STATIC_EVENTS, STATIC_NEWS } from '../data/staticData';
 
 export const useStore = () => {
-  const [events, setEvents] = useState(INITIAL_EVENTS);
-  const [news, setNews] = useState(INITIAL_NEWS);
+  const [events, setEvents] = useState([]);
+  const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Load Data Effect
   useEffect(() => {
-    const initializeData = async () => {
-      // 1. Try to load cached data for instant display
-      const savedEvents = localStorage.getItem('olami_events');
-      if (savedEvents) {
-        setEvents(JSON.parse(savedEvents));
-      }
+    const initializeData = () => {
+      // Check if we have already seeded the data
+      const isSeeded = localStorage.getItem('olami_data_seeded_v3');
 
-      const savedNews = localStorage.getItem('olami_news');
-      if (savedNews) {
-        setNews(JSON.parse(savedNews));
-      }
-
-      // 2. Fetch fresh data for Events
-      try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/1DqIaneAToXiCosssPHoc-e5DHaodoKergJtW4_97WAw/gviz/tq?tqx=out:csv&sheet=%D0%90%D1%84%D0%B8%D1%88%D0%B0');
-        if (response.ok) {
-          const text = await response.text();
-          const parsed = parseEvents(text);
-          if (parsed.length > 0) {
-            setEvents(parsed);
-            localStorage.setItem('olami_events', JSON.stringify(parsed));
-          }
+      if (!isSeeded) {
+        // First run or reset: Load static data
+        setEvents(STATIC_EVENTS);
+        setNews(STATIC_NEWS);
+        localStorage.setItem('olami_events', JSON.stringify(STATIC_EVENTS));
+        localStorage.setItem('olami_news', JSON.stringify(STATIC_NEWS));
+        localStorage.setItem('olami_data_seeded_v3', 'true');
+      } else {
+        // Subsequent runs: Load from LocalStorage
+        const savedEvents = localStorage.getItem('olami_events');
+        if (savedEvents) {
+          setEvents(JSON.parse(savedEvents));
+        } else {
+          setEvents(STATIC_EVENTS); // Fallback
         }
-      } catch (e) {
-        console.error("Events fetch error:", e);
-      }
 
-      // 3. Fetch fresh data for News
-      try {
-        const response = await fetch('https://docs.google.com/spreadsheets/d/1DqIaneAToXiCosssPHoc-e5DHaodoKergJtW4_97WAw/gviz/tq?tqx=out:csv&sheet=%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8');
-          if (response.ok) {
-          const text = await response.text();
-          const parsed = parseNews(text);
-          if (parsed.length > 0) {
-            setNews(parsed);
-            localStorage.setItem('olami_news', JSON.stringify(parsed));
-          }
+        const savedNews = localStorage.getItem('olami_news');
+        if (savedNews) {
+          setNews(JSON.parse(savedNews));
+        } else {
+          setNews(STATIC_NEWS); // Fallback
         }
-      } catch (e) {
-        console.error("News fetch error:", e);
       }
 
       setLoading(false);
@@ -58,44 +41,65 @@ export const useStore = () => {
 
     initializeData();
 
-    // Auto-refresh interval (30 seconds)
-    const intervalId = setInterval(() => {
-        initializeData();
-    }, 30000);
-
     // Listen for storage events (Cross-tab sync)
     const handleStorageChange = (e) => {
       if (e.key === 'olami_events') {
-        setEvents(e.newValue ? JSON.parse(e.newValue) : INITIAL_EVENTS);
+        setEvents(e.newValue ? JSON.parse(e.newValue) : []);
       }
       if (e.key === 'olami_news') {
-        setNews(e.newValue ? JSON.parse(e.newValue) : INITIAL_NEWS);
+        setNews(e.newValue ? JSON.parse(e.newValue) : []);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => {
         window.removeEventListener('storage', handleStorageChange);
-        clearInterval(intervalId);
     };
   }, []);
 
-  // Sync Local Logic (Backup sync)
+  // Sync Local Logic
   useEffect(() => {
-      localStorage.setItem('olami_events', JSON.stringify(events));
-  }, [events]);
+      if (!loading && events.length > 0) {
+        localStorage.setItem('olami_events', JSON.stringify(events));
+      }
+  }, [events, loading]);
 
   useEffect(() => {
-      localStorage.setItem('olami_news', JSON.stringify(news));
-  }, [news]);
+      if (!loading && news.length > 0) {
+        localStorage.setItem('olami_news', JSON.stringify(news));
+      }
+  }, [news, loading]);
 
-  // Actions (ReadOnly in this mode)
-  const addEvent = async () => console.warn("Read-only mode (Google Sheets)");
-  const updateEvent = async () => console.warn("Read-only mode (Google Sheets)");
-  const deleteEvent = async () => console.warn("Read-only mode (Google Sheets)");
-  const addNews = async () => console.warn("Read-only mode (Google Sheets)");
-  const updateNews = async () => console.warn("Read-only mode (Google Sheets)");
-  const deleteNews = async () => console.warn("Read-only mode (Google Sheets)");
+  // Actions (Local Storage Mode)
+  const addEvent = async (event) => {
+    const newEvents = [...events, { ...event, id: Date.now().toString() }];
+    setEvents(newEvents);
+  };
+
+  const updateEvent = async (id, updatedData) => {
+    const newEvents = events.map(e => e.id === id ? { ...e, ...updatedData } : e);
+    setEvents(newEvents);
+  };
+
+  const deleteEvent = async (id) => {
+    const newEvents = events.filter(e => e.id !== id);
+    setEvents(newEvents);
+  };
+
+  const addNews = async (item) => {
+    const newNews = [...news, { ...item, id: Date.now().toString() }];
+    setNews(newNews);
+  };
+
+  const updateNews = async (id, updatedData) => {
+    const newNews = news.map(n => n.id === id ? { ...n, ...updatedData } : n);
+    setNews(newNews);
+  };
+
+  const deleteNews = async (id) => {
+    const newNews = news.filter(n => n.id !== id);
+    setNews(newNews);
+  };
 
   return {
     events,
