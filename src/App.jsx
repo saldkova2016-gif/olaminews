@@ -323,7 +323,7 @@ export const MainStage = ({ events, theme, mode = 'standard', currentEventIndex 
       ) : (
         // Standard Full View
         <div className="relative z-10 w-full h-full flex p-6 gap-8 items-start overflow-hidden">
-            <div className="h-full w-2/3 flex-shrink-0 relative">
+            <div className="h-full w-1/2 flex-shrink-0 relative">
                 <div className="relative w-full h-full">
                     <img
                     src={event.image}
@@ -575,10 +575,20 @@ const SettingsPanel = ({ onClose, theme, setTheme, scale, setScale, slideshowMod
 export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('olami_theme') || 'dark');
-  const [scale, setScale] = useState(() => parseFloat(localStorage.getItem('olami_scale')) || 1);
+  const [scale, setScale] = useState(() => {
+    const savedScale = localStorage.getItem('olami_scale');
+    if (savedScale) return parseFloat(savedScale);
+    // Auto-scale for large screens (4K)
+    if (typeof window !== 'undefined' && window.innerWidth > 2500) return 2.5;
+    return 1;
+  });
   const [slideshowMode, setSlideshowMode] = useState(() => localStorage.getItem('olami_slideshow_mode') === 'true');
 
   const store = useStore();
+
+  useEffect(() => {
+     console.log('App Mounted. InnerWidth:', window.innerWidth);
+  }, []);
 
   // Lift MainStage slider state to App to sync BackgroundLayer
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
