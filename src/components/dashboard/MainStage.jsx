@@ -34,8 +34,9 @@ const MainStage = () => {
       const index = sortedEvents.findIndex(event => {
         const eventTime = DateTime.fromISO(event.datetime);
         const diff = eventTime.diff(now, 'minutes').minutes;
-        // Urgent if starts within 30 mins and hasn't finished (assuming 2h duration for simplicity)
-        return diff <= 30 && diff > -120;
+        // Urgent if starts within 30 mins and hasn't finished (using actual duration or default 120m)
+        const duration = event.duration || 120;
+        return diff <= 30 && diff > -duration;
       });
 
       if (index !== -1) {
